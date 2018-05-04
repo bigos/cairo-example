@@ -2,3 +2,7 @@
 
 ** Example
 https://github.com/haskell-gi/gi-gtk-examples/blob/master/carsim/CarSim.hs
+
+** Emacs
+Menu Haskell/Load file seems to load all the imports.
+Still need to figure our how to include the missing cairo libraries
