@@ -20,3 +20,7 @@ executable cairo-example
   build-depends:       base >= 4.7 && < 5
                      , gi-gtk >= 3.0
                      , haskell-gi-base -any
+                     , gi-cairo -any
+                     , cairo -any
+                     , gi-glib -any
+                     , gi-gdk -any
