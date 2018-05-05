@@ -12,6 +12,7 @@ import qualified GI.Gdk as Gdk
 import Graphics.Rendering.Cairo
 import Graphics.Rendering.Cairo.Internal (Render(runRender))
 import Graphics.Rendering.Cairo.Types (Cairo(Cairo))
+import Data.GI.Base.ManagedPtr
 
 import GI.Gtk.Enums (WindowType(..))
 
@@ -53,6 +54,7 @@ main = do
 
   _ <- Gtk.onWidgetKeyPressEvent win $ \x -> do
     vvv <- Gdk.getEventKeyKeyval x
+    -- How do I draw on canvas here?
     (putStrLn ("You have pressed key code " ++  (show vvv))) >> pure True
 
   _ <- Gtk.onWidgetDestroy win Gtk.mainQuit
