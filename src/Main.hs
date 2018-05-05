@@ -1,4 +1,4 @@
-  {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module Main where
 
@@ -30,7 +30,6 @@ updateCanvas canvas = do
   let mwidth  = realToFrac width'
       mheight = realToFrac height'
 
-
   setSourceRGB 0.6 0.9 0
   setLineWidth 20
   setLineCap LineCapRound
@@ -46,15 +45,11 @@ main = do
   _ <- Gtk.init  Nothing
 
   win <- Gtk.windowNew WindowTypeToplevel
-
   canvas <- Gtk.drawingAreaNew
+  Gtk.containerAdd win canvas
 
   _ <- Gtk.onWidgetDraw canvas $ \context ->
     renderWithContext context (updateCanvas canvas) >> pure True
-
-
-  Gtk.containerAdd win canvas
-
 
   _ <- Gtk.onWidgetDestroy win Gtk.mainQuit
 
