@@ -51,6 +51,10 @@ main = do
   _ <- Gtk.onWidgetDraw canvas $ \context ->
     renderWithContext context (updateCanvas canvas) >> pure True
 
+  _ <- Gtk.onWidgetKeyPressEvent win $ \x -> do
+    vvv <- Gdk.getEventKeyKeyval x
+    (putStrLn ("You have pressed key code " ++  (show vvv))) >> pure True
+
   _ <- Gtk.onWidgetDestroy win Gtk.mainQuit
 
   Gtk.widgetShowAll win
