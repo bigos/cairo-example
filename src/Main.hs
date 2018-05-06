@@ -50,11 +50,12 @@ main = do
   Gtk.containerAdd win canvas
 
   _ <- Gtk.onWidgetDraw canvas $ \context ->
+    putStrLn ("drawing event ") >>
     renderWithContext context (updateCanvas canvas) >> pure True
 
   _ <- Gtk.onWidgetKeyPressEvent win $ \x -> do
     vvv <- Gdk.getEventKeyKeyval x
-    -- How do I draw on canvas here?
+    Gtk.widgetQueueDraw canvas -- this forces redrawing of canvas widget
     (putStrLn ("You have pressed key code " ++  (show vvv))) >> pure True
 
   _ <- Gtk.onWidgetDestroy win Gtk.mainQuit
