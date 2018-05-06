@@ -53,12 +53,17 @@ main = do
     putStrLn ("drawing event ") >>
     renderWithContext context (updateCanvas canvas) >> pure True
 
-  _ <- Gtk.onWidgetKeyPressEvent win $ \x -> do
-    vvv <- Gdk.getEventKeyKeyval x
-    Gtk.widgetQueueDraw canvas -- this forces redrawing of canvas widget
+  _ <- Gtk.onWidgetKeyPressEvent win $ \xxx -> do
+    vvv <- Gdk.getEventKeyKeyval xxx
+    Gtk.widgetQueueDraw canvas
+    -- this forces redrawing of canvas widget
     (putStrLn ("You have pressed key code " ++  (show vvv))) >> pure True
 
   _ <- Gtk.onWidgetDestroy win Gtk.mainQuit
 
   Gtk.widgetShowAll win
   Gtk.main
+
+
+-- monad state
+-- http://hackage.haskell.org/package/mtl-2.2.2/docs/Control-Monad-State-Lazy.html
