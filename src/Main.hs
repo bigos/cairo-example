@@ -2,18 +2,18 @@
 
 module Main where
 
-import Data.IORef
+import Data.IORef (newIORef, readIORef, writeIORef)
 import Control.Monad.Trans.Reader (runReaderT)
 import           Foreign.Ptr (castPtr)
 import qualified GI.Cairo as GICairo
-import qualified GI.GLib as GLib
+-- import qualified GI.GLib as GLib
 import qualified GI.Gtk as Gtk
 import qualified GI.Gdk as Gdk
 
 import Graphics.Rendering.Cairo
 import Graphics.Rendering.Cairo.Internal (Render(runRender))
 import Graphics.Rendering.Cairo.Types (Cairo(Cairo))
-import Data.GI.Base.ManagedPtr
+-- import Data.GI.Base.ManagedPtr
 
 import GI.Gtk.Enums (WindowType(..))
 
@@ -32,8 +32,8 @@ updateCanvas canvas lastkey = do
   let mwidth  = realToFrac width'
       mheight = realToFrac height'
 
-  -- drawing changes color when you press A on keyboard
-  if lastkey == 65 then setSourceRGB 0.9 0.5 0 else setSourceRGB 0.6 0.9 0
+  -- drawing changes color when you press 'a' on keyboard
+  if lastkey == 97 then setSourceRGB 0.9 0.5 0 else setSourceRGB 0.6 0.9 0
   setLineWidth 20
   setLineCap LineCapRound
   setLineJoin LineJoinRound
@@ -46,24 +46,23 @@ updateCanvas canvas lastkey = do
 
 main = do
   _ <- Gtk.init  Nothing
+  lastKey <- newIORef (0 :: Integer)
 
-  lastKey <- Data.IORef.newIORef (0 :: Integer)
   win <- Gtk.windowNew WindowTypeToplevel
   canvas <- Gtk.drawingAreaNew
   Gtk.containerAdd win canvas
 
   _ <- Gtk.onWidgetDraw canvas $ \context ->
     putStrLn ("drawing event ") >>
-    Data.IORef.readIORef lastKey >>=
-    (\lk ->
-    renderWithContext context  (updateCanvas canvas lk )) >> pure True
+    readIORef lastKey >>=
+    (\lk -> renderWithContext context (updateCanvas canvas lk )) >> pure True
 
-  _ <- Gtk.onWidgetKeyPressEvent win $ \xxx -> do
-    vvv <- Gdk.getEventKeyKeyval xxx
-    Data.IORef.writeIORef lastKey (fromIntegral vvv)
-    Gtk.widgetQueueDraw canvas
+  _ <- Gtk.onWidgetKeyPressEvent win $ \rkv -> do
+    kv <- Gdk.getEventKeyKeyval rkv
+    writeIORef lastKey (fromIntegral kv)
     -- this forces redrawing of canvas widget
-    (putStrLn ("You have pressed key code " ++  (show vvv))) >> pure True
+    Gtk.widgetQueueDraw canvas
+    (putStrLn ("You have pressed key code " ++  (show kv))) >> pure True
 
   _ <- Gtk.onWidgetDestroy win Gtk.mainQuit
 
