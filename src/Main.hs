@@ -2,7 +2,7 @@
 
 module Main where
 
-import Data.IORef (newIORef, readIORef, writeIORef)
+import Data.IORef (newIORef, readIORef, writeIORef, modifyIORef')
 import Control.Monad.Trans.Reader (runReaderT)
 import           Foreign.Ptr (castPtr)
 import qualified GI.Cairo as GICairo
@@ -20,7 +20,7 @@ import GI.Gtk.Enums (WindowType(..))
 type LastKey = Integer
 data Heading = Hleft | Hup | Hright | Hdown | None deriving (Eq, Show)
 
-data Model = Model { lastKey :: Int
+data Model = Model { lastKey :: LastKey
                    , heading :: Heading
                    } deriving (Show)
 
@@ -61,6 +61,15 @@ keyToHeading lk
   | lk == 65364 = Hdown
   | otherwise = None
 
+ifNoneThen :: Heading -> Heading -> Heading
+None `ifNoneThen` x = x
+h    `ifNoneThen` _ = h
+
+updateModel :: Integer -> Model -> Model
+updateModel kv oldModel = Model newKv newHeading
+    where newKv      = fromIntegral kv
+          newHeading = keyToHeading newKv `ifNoneThen` heading oldModel
+
 main = do
   _ <- Gtk.init  Nothing
 
@@ -80,11 +89,7 @@ main = do
     kv <- Gdk.getEventKeyKeyval rkv
 
     -- update globalModel in place
-    readIORef globalModel >>= (\m -> writeIORef globalModel (Model
-                                                             (fromIntegral kv)
-                                                             (if ((keyToHeading (fromIntegral kv)) == None)
-                                                               then (heading m)
-                                                               else (keyToHeading (fromIntegral kv)))))
+    modifyIORef' globalModel (updateModel (fromIntegral kv))
 
     -- this forces redrawing of canvas widget
     Gtk.widgetQueueDraw canvas
