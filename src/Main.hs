@@ -2,6 +2,7 @@
 
 module Main where
 
+import Data.IORef
 import Control.Monad.Trans.Reader (runReaderT)
 import           Foreign.Ptr (castPtr)
 import qualified GI.Cairo as GICairo
@@ -24,14 +25,15 @@ renderWithContext :: GICairo.Context -> Render () -> IO ()
 renderWithContext ct r = Gdk.withManagedPtr ct $ \p ->
   runReaderT (runRender r) (Cairo (castPtr p))
 
-updateCanvas :: Gtk.DrawingArea -> Render ()
-updateCanvas canvas = do
+updateCanvas :: Gtk.DrawingArea -> Integer -> Render ()
+updateCanvas canvas lastkey = do
   width'  <- fromIntegral <$> Gtk.widgetGetAllocatedWidth canvas
   height' <- fromIntegral <$> Gtk.widgetGetAllocatedHeight canvas
   let mwidth  = realToFrac width'
       mheight = realToFrac height'
 
-  setSourceRGB 0.6 0.9 0
+  -- drawing changes color when you press A on keyboard
+  if lastkey == 65 then setSourceRGB 0.9 0.5 0 else setSourceRGB 0.6 0.9 0
   setLineWidth 20
   setLineCap LineCapRound
   setLineJoin LineJoinRound
@@ -45,16 +47,20 @@ updateCanvas canvas = do
 main = do
   _ <- Gtk.init  Nothing
 
+  lastKey <- Data.IORef.newIORef (0 :: Integer)
   win <- Gtk.windowNew WindowTypeToplevel
   canvas <- Gtk.drawingAreaNew
   Gtk.containerAdd win canvas
 
   _ <- Gtk.onWidgetDraw canvas $ \context ->
     putStrLn ("drawing event ") >>
-    renderWithContext context (updateCanvas canvas) >> pure True
+    Data.IORef.readIORef lastKey >>=
+    (\lk ->
+    renderWithContext context  (updateCanvas canvas lk )) >> pure True
 
   _ <- Gtk.onWidgetKeyPressEvent win $ \xxx -> do
     vvv <- Gdk.getEventKeyKeyval xxx
+    Data.IORef.writeIORef lastKey (fromIntegral vvv)
     Gtk.widgetQueueDraw canvas
     -- this forces redrawing of canvas widget
     (putStrLn ("You have pressed key code " ++  (show vvv))) >> pure True
