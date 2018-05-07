@@ -2,7 +2,7 @@
 
 module Main where
 
-import Data.IORef (newIORef, readIORef, writeIORef, modifyIORef')
+import Data.IORef (newIORef, readIORef, modifyIORef')
 import Control.Monad.Trans.Reader (runReaderT)
 import           Foreign.Ptr (castPtr)
 import qualified GI.Cairo as GICairo
