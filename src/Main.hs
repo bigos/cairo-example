@@ -20,6 +20,10 @@ import GI.Gtk.Enums (WindowType(..))
 type LastKey = Integer
 data Heading = Hleft | Hup | Hright | Hdown | None deriving (Eq, Show)
 
+data Model = Model { lastKey :: Int
+                   , heading :: Heading
+                   } deriving (Show)
+
 -- | This function bridges gi-cairo with the hand-written cairo
 -- package. It takes a `GI.Cairo.Context` (as it appears in gi-cairo),
 -- and a `Render` action (as in the cairo lib), and renders the
@@ -29,11 +33,13 @@ renderWithContext ct r = Gdk.withManagedPtr ct $ \p ->
   runReaderT (runRender r) (Cairo (castPtr p))
 
 --updateCanvas :: Gtk.DrawingArea -> LastKey -> Render ()
-updateCanvas canvas lastkey lh = do
+updateCanvas canvas nodel = do
   width'  <- fromIntegral <$> Gtk.widgetGetAllocatedWidth canvas
   height' <- fromIntegral <$> Gtk.widgetGetAllocatedHeight canvas
   let mwidth  = realToFrac width'
       mheight = realToFrac height'
+      lastkey = 97
+      o = Hleft
 
   -- drawing changes color when you press 'a' on keyboard
   if lastkey == 97 then setSourceRGB 0.9 0.5 0 else setSourceRGB 0.6 0.9 0
@@ -59,17 +65,10 @@ keyToHeading lk
   | lk == 65364 = Hdown
   | otherwise = None
 
-updateOnKeyPress lk lh kv = do
-  writeIORef lk kv
-  if ((keyToHeading kv) /= None)
-    then  writeIORef lh (keyToHeading kv)
-    else (readIORef lh) >>= (\old -> writeIORef lh old)
-
 main = do
   _ <- Gtk.init  Nothing
 
-  lastKey <- newIORef (0 :: LastKey)
-  lastHeading <- newIORef (Hright :: Heading)
+  globalModel <- newIORef ((Model 0 Hright) :: Model)
 
   win <- Gtk.windowNew WindowTypeToplevel
   canvas <- Gtk.drawingAreaNew
@@ -77,20 +76,26 @@ main = do
 
   _ <- Gtk.onWidgetDraw canvas $ \context ->
     putStrLn ("drawing event ") >>
-    readIORef lastKey >>=
-    (readIORef lastHeading >>=
-    (\lk lh -> renderWithContext context (updateCanvas canvas lk lh ))) >> pure True
+    readIORef globalModel >>=
+    (\model ->
+    (renderWithContext context (updateCanvas canvas model))) >> pure True
 
   _ <- Gtk.onWidgetKeyPressEvent win $ \rkv -> do
     kv <- Gdk.getEventKeyKeyval rkv
     -- writeIORef lastKey (fromIntegral kv)
-    updateOnKeyPress lastKey lastHeading (fromIntegral kv)
+
+
+    readIORef globalModel >>= (\m -> writeIORef globalModel (Model
+                                                             (fromIntegral kv)
+                                                             (if ((keyToHeading (fromIntegral kv)) == None)
+                                                               then (heading m)
+                                                               else (keyToHeading (fromIntegral kv)))))
+
     -- this forces redrawing of canvas widget
     Gtk.widgetQueueDraw canvas
-    readIORef lastHeading >>=
+    readIORef globalModel >>=
       (\ov ->
-         (putStrLn ( "You have pressed key code"  ++
-                     (show kv) ++ (show ov))))  >> pure True
+         (putStrLn ( "You have pressed key code"  ++ (show ov))))  >> pure True
 
   _ <- Gtk.onWidgetDestroy win Gtk.mainQuit
 
