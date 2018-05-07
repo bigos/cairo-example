@@ -28,8 +28,8 @@ renderWithContext :: GICairo.Context -> Render () -> IO ()
 renderWithContext ct r = Gdk.withManagedPtr ct $ \p ->
   runReaderT (runRender r) (Cairo (castPtr p))
 
-updateCanvas :: Gtk.DrawingArea -> LastKey -> Render ()
-updateCanvas canvas lastkey = do
+--updateCanvas :: Gtk.DrawingArea -> LastKey -> Render ()
+updateCanvas canvas lastkey lh = do
   width'  <- fromIntegral <$> Gtk.widgetGetAllocatedWidth canvas
   height' <- fromIntegral <$> Gtk.widgetGetAllocatedHeight canvas
   let mwidth  = realToFrac width'
@@ -41,10 +41,14 @@ updateCanvas canvas lastkey = do
   setLineCap LineCapRound
   setLineJoin LineJoinRound
 
-  moveTo 30 30
-  lineTo (mwidth-30) (mheight-30)
-  lineTo (mwidth-30) 30
-  lineTo 30 (mheight-30)
+  moveTo (mheight/2) (mwidth/2)
+
+  case o of Hleft ->  lineTo (mheight/2) (0)
+            Hup ->    lineTo (0) (mwidth/2)
+            Hright -> lineTo (mheight/2) (mwidth)
+            Hdown ->  lineTo (mheight) (mwidth/2)
+            otherwise -> lineTo (mheight/2) (mwidth/2)
+
   stroke
 
 keyToHeading :: LastKey -> Heading
@@ -74,7 +78,8 @@ main = do
   _ <- Gtk.onWidgetDraw canvas $ \context ->
     putStrLn ("drawing event ") >>
     readIORef lastKey >>=
-    (\lk -> renderWithContext context (updateCanvas canvas lk )) >> pure True
+    (readIORef lastHeading >>=
+    (\lk lh -> renderWithContext context (updateCanvas canvas lk lh ))) >> pure True
 
   _ <- Gtk.onWidgetKeyPressEvent win $ \rkv -> do
     kv <- Gdk.getEventKeyKeyval rkv
