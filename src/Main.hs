@@ -33,28 +33,24 @@ renderWithContext ct r = Gdk.withManagedPtr ct $ \p ->
   runReaderT (runRender r) (Cairo (castPtr p))
 
 --updateCanvas :: Gtk.DrawingArea -> LastKey -> Render ()
-updateCanvas canvas nodel = do
+updateCanvas canvas model = do
   width'  <- fromIntegral <$> Gtk.widgetGetAllocatedWidth canvas
   height' <- fromIntegral <$> Gtk.widgetGetAllocatedHeight canvas
   let mwidth  = realToFrac width'
       mheight = realToFrac height'
-      lastkey = 97
-      o = Hleft
 
   -- drawing changes color when you press 'a' on keyboard
-  if lastkey == 97 then setSourceRGB 0.9 0.5 0 else setSourceRGB 0.6 0.9 0
+  if (lastKey model) == 97 then setSourceRGB 0.9 0.5 0 else setSourceRGB 0.6 0.9 0
   setLineWidth 20
   setLineCap LineCapRound
   setLineJoin LineJoinRound
 
   moveTo (mheight/2) (mwidth/2)
-
-  case o of Hleft ->  lineTo (mheight/2) (0)
-            Hup ->    lineTo (0) (mwidth/2)
-            Hright -> lineTo (mheight/2) (mwidth)
-            Hdown ->  lineTo (mheight) (mwidth/2)
-            otherwise -> lineTo (mheight/2) (mwidth/2)
-
+  case (heading model) of Hleft ->  lineTo 0 (mheight/2)
+                          Hup ->    lineTo (mwidth/2) 0
+                          Hright -> lineTo (mheight) (mwidth/2)
+                          Hdown ->  lineTo (mheight/2) (mwidth)
+                          None ->   lineTo (mheight/2) (mwidth/2)
   stroke
 
 keyToHeading :: LastKey -> Heading
@@ -82,9 +78,8 @@ main = do
 
   _ <- Gtk.onWidgetKeyPressEvent win $ \rkv -> do
     kv <- Gdk.getEventKeyKeyval rkv
-    -- writeIORef lastKey (fromIntegral kv)
 
-
+    -- update globalModel in place
     readIORef globalModel >>= (\m -> writeIORef globalModel (Model
                                                              (fromIntegral kv)
                                                              (if ((keyToHeading (fromIntegral kv)) == None)
@@ -101,7 +96,3 @@ main = do
 
   Gtk.widgetShowAll win
   Gtk.main
-
-
--- monad state
--- http://hackage.haskell.org/package/mtl-2.2.2/docs/Control-Monad-State-Lazy.html
