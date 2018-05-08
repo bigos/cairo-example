@@ -32,12 +32,23 @@ renderWithContext :: GICairo.Context -> Render () -> IO ()
 renderWithContext ct r = Gdk.withManagedPtr ct $ \p ->
   runReaderT (runRender r) (Cairo (castPtr p))
 
+getWidgetSize :: Gtk.DrawingArea -> Render (Int, Int)
+getWidgetSize widget = do
+  width'  <- fromIntegral <$> Gtk.widgetGetAllocatedWidth widget
+  height' <- fromIntegral <$> Gtk.widgetGetAllocatedHeight widget
+  return (width', height')
+
+getWidgetSize2 :: Gtk.DrawingArea -> IO (Int, Int)
+getWidgetSize2 widget = do
+  width'  <- fromIntegral <$> Gtk.widgetGetAllocatedWidth widget
+  height' <- fromIntegral <$> Gtk.widgetGetAllocatedHeight widget
+  return (width', height')
+
 updateCanvas :: Gtk.DrawingArea -> Model -> Render ()
 updateCanvas canvas model = do
-  width'  <- fromIntegral <$> Gtk.widgetGetAllocatedWidth canvas
-  height' <- fromIntegral <$> Gtk.widgetGetAllocatedHeight canvas
-  let mwidth  = realToFrac width'
-      mheight = realToFrac height'
+  size <- getWidgetSize canvas
+  let mwidth  = fromIntegral (fst size)
+      mheight = fromIntegral (snd size)
 
   -- drawing changes color when you press 'a' on keyboard
   if (lastKey model) == 97 then setSourceRGB 0.9 0.5 0 else setSourceRGB 0.6 0.9 0
@@ -45,12 +56,12 @@ updateCanvas canvas model = do
   setLineCap LineCapRound
   setLineJoin LineJoinRound
 
-  moveTo (mheight/2) (mwidth/2)
+  moveTo (mwidth / 2) (mheight / 2)
   case (heading model) of Hleft ->  lineTo (0+offset) (mheight/2)
                           Hup ->    lineTo (mwidth/2) (0+offset)
-                          Hright -> lineTo ((mheight)-offset) (mwidth/2)
-                          Hdown ->  lineTo (mheight/2) ((mwidth)-offset)
-                          None ->   lineTo (mheight/2) (mwidth/2)
+                          Hright -> lineTo (mwidth-offset) (mheight/2)
+                          Hdown ->  lineTo (mwidth/2) (mheight-offset)
+                          None ->   lineTo (mwidth/2) (mheight/2)
   stroke
   where offset = 30
 
@@ -81,7 +92,7 @@ main = do
   Gtk.containerAdd win canvas
 
   _ <- Gtk.onWidgetDraw canvas $ \context ->
-    putStrLn ("drawing event ") >>
+    getWidgetSize2 canvas >>= (\ss->  putStrLn ("drawing event " ++ (show ss))) >>
     readIORef globalModel >>=
     (\model ->
     (renderWithContext context (updateCanvas canvas model))) >> pure True
