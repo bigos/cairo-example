@@ -32,7 +32,7 @@ renderWithContext :: GICairo.Context -> Render () -> IO ()
 renderWithContext ct r = Gdk.withManagedPtr ct $ \p ->
   runReaderT (runRender r) (Cairo (castPtr p))
 
---updateCanvas :: Gtk.DrawingArea -> LastKey -> Render ()
+updateCanvas :: Gtk.DrawingArea -> Model -> Render ()
 updateCanvas canvas model = do
   width'  <- fromIntegral <$> Gtk.widgetGetAllocatedWidth canvas
   height' <- fromIntegral <$> Gtk.widgetGetAllocatedHeight canvas

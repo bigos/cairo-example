@@ -15,10 +15,17 @@ https://github.com/haskell-gi/haskell-gi/wiki/Using-Cairo-with-haskell-gi-genera
 
 https://github.com/haskell-gi/haskell-gi/blob/master/examples/advanced/Cairo.hs
 
+
+** Documentation
+
+https://hackage.haskell.org/package/gi-gtk-3.0.18/docs/doc-index-All.html
+
 ** Emacs
+
 Menu Haskell/Load file seems to load all the imports.
-Still need to figure our how to include the missing cairo libraries
 
 ** Strange problems
 
-It might be worth to close the REPL and start new one after running stack install
+When you have a problem with missing Cairo libraries and REPL doesn't see the
+new libraries, it might be worth to close the REPL and start new one after
+running stack install
