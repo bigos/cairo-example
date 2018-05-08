@@ -46,12 +46,13 @@ updateCanvas canvas model = do
   setLineJoin LineJoinRound
 
   moveTo (mheight/2) (mwidth/2)
-  case (heading model) of Hleft ->  lineTo 0 (mheight/2)
-                          Hup ->    lineTo (mwidth/2) 0
-                          Hright -> lineTo (mheight) (mwidth/2)
-                          Hdown ->  lineTo (mheight/2) (mwidth)
+  case (heading model) of Hleft ->  lineTo (0+offset) (mheight/2)
+                          Hup ->    lineTo (mwidth/2) (0+offset)
+                          Hright -> lineTo ((mheight)-offset) (mwidth/2)
+                          Hdown ->  lineTo (mheight/2) ((mwidth)-offset)
                           None ->   lineTo (mheight/2) (mwidth/2)
   stroke
+  where offset = 30
 
 keyToHeading :: LastKey -> Heading
 keyToHeading lk
