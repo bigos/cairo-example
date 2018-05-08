@@ -32,21 +32,15 @@ renderWithContext :: GICairo.Context -> Render () -> IO ()
 renderWithContext ct r = Gdk.withManagedPtr ct $ \p ->
   runReaderT (runRender r) (Cairo (castPtr p))
 
-getWidgetSize :: Gtk.DrawingArea -> Render (Int, Int)
+getWidgetSize :: Gtk.DrawingArea -> IO (Int, Int)
 getWidgetSize widget = do
-  width'  <- fromIntegral <$> Gtk.widgetGetAllocatedWidth widget
-  height' <- fromIntegral <$> Gtk.widgetGetAllocatedHeight widget
-  return (width', height')
-
-getWidgetSize2 :: Gtk.DrawingArea -> IO (Int, Int)
-getWidgetSize2 widget = do
   width'  <- fromIntegral <$> Gtk.widgetGetAllocatedWidth widget
   height' <- fromIntegral <$> Gtk.widgetGetAllocatedHeight widget
   return (width', height')
 
 updateCanvas :: Gtk.DrawingArea -> Model -> Render ()
 updateCanvas canvas model = do
-  size <- getWidgetSize canvas
+  size <- liftIO (getWidgetSize canvas)
   let mwidth  = fromIntegral (fst size)
       mheight = fromIntegral (snd size)
 
@@ -61,7 +55,6 @@ updateCanvas canvas model = do
                           Hup ->    lineTo (mwidth/2) (0+offset)
                           Hright -> lineTo (mwidth-offset) (mheight/2)
                           Hdown ->  lineTo (mwidth/2) (mheight-offset)
-                          None ->   lineTo (mwidth/2) (mheight/2)
   stroke
   where offset = 30
 
@@ -92,7 +85,7 @@ main = do
   Gtk.containerAdd win canvas
 
   _ <- Gtk.onWidgetDraw canvas $ \context ->
-    getWidgetSize2 canvas >>= (\ss->  putStrLn ("drawing event " ++ (show ss))) >>
+    getWidgetSize canvas >>= (\ss->  putStrLn ("drawing event - widget size " ++ (show ss))) >>
     readIORef globalModel >>=
     (\model ->
     (renderWithContext context (updateCanvas canvas model))) >> pure True
