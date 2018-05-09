@@ -4,7 +4,7 @@ module Main where
 
 -- imports ----------------------------------------
 
-import Data.IORef (newIORef, readIORef, modifyIORef')
+import Data.IORef (IORef, newIORef, readIORef, modifyIORef')
 import Control.Monad.Trans.Reader (runReaderT)
 import           Foreign.Ptr (castPtr)
 import qualified GI.Cairo as GICairo
@@ -22,12 +22,16 @@ import GI.Gtk.Enums (WindowType(..))
 -- model ----------------------------------------
 
 type LastKey = Integer
-data Heading = Hleft | Hup | Hright | Hdown | None deriving (Eq, Show)
+data Heading = HeadingLeft | HeadingUp | HeadingRight | HeadingDown | None deriving (Eq, Show)
 
 data Model = Model { lastKey :: LastKey
                    , heading :: Heading
                    } deriving (Show)
 
+initGlobalModel :: IO (Data.IORef.IORef Model)
+initGlobalModel = newIORef (Model
+                           0
+                           HeadingRight)
 -- helpers ----------------------------------------
 
 -- | This function bridges gi-cairo with the hand-written cairo
@@ -46,20 +50,20 @@ getWidgetSize widget = do
 
 keyToHeading :: LastKey -> Heading
 keyToHeading lk
-  | lk == 65361 = Hleft
-  | lk == 65362 = Hup
-  | lk == 65363 = Hright
-  | lk == 65364 = Hdown
+  | lk == 65361 = HeadingLeft
+  | lk == 65362 = HeadingUp
+  | lk == 65363 = HeadingRight
+  | lk == 65364 = HeadingDown
   | otherwise = None
 
 ifNoneThen :: Heading -> Heading -> Heading
-None `ifNoneThen` x = x
+None `ifNoneThen` v = v
 h    `ifNoneThen` _ = h
 
 -- view ----------------------------------------
 
-updateCanvas :: Gtk.DrawingArea -> Model -> Render ()
-updateCanvas canvas model = do
+drawCanvas :: Gtk.DrawingArea -> Model -> Render ()
+drawCanvas canvas model = do
   size <- liftIO (getWidgetSize canvas)
   let mwidth  = fromIntegral (fst size)
       mheight = fromIntegral (snd size)
@@ -71,10 +75,11 @@ updateCanvas canvas model = do
   setLineJoin LineJoinRound
 
   moveTo (mwidth / 2) (mheight / 2)
-  case (heading model) of Hleft ->  lineTo (0+offset) (mheight/2)
-                          Hup ->    lineTo (mwidth/2) (0+offset)
-                          Hright -> lineTo (mwidth-offset) (mheight/2)
-                          Hdown ->  lineTo (mwidth/2) (mheight-offset)
+  case (heading model) of HeadingLeft ->  lineTo (0+offset) (mheight/2)
+                          HeadingUp ->    lineTo (mwidth/2) (0+offset)
+                          HeadingRight -> lineTo (mwidth-offset) (mheight/2)
+                          HeadingDown ->  lineTo (mwidth/2) (mheight-offset)
+                          None ->         lineTo (mwidth / 2) (mheight / 2)
   stroke
   where offset = 30
 
@@ -87,10 +92,11 @@ updateModel kv oldModel = Model newKv newHeading
 
 -- main ----------------------------------------
 
+main :: IO ()
 main = do
   _ <- Gtk.init  Nothing
 
-  globalModel <- newIORef ((Model 0 Hright) :: Model)
+  globalModel <- initGlobalModel
 
   win <- Gtk.windowNew WindowTypeToplevel
   canvas <- Gtk.drawingAreaNew
@@ -100,7 +106,7 @@ main = do
     getWidgetSize canvas >>= (\ss->  putStrLn ("drawing event - widget size " ++ (show ss))) >>
     readIORef globalModel >>=
     (\model ->
-    (renderWithContext context (updateCanvas canvas model))) >> pure True
+    (renderWithContext context (drawCanvas canvas model))) >> pure True
 
   _ <- Gtk.onWidgetKeyPressEvent win $ \rkv -> do
     kv <- Gdk.getEventKeyKeyval rkv
