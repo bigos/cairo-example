@@ -48,18 +48,18 @@ data KeyControl = KeyPause | KeyLeft | KeyUp | KeyRight | KeyDown | KeyOther
 initGlobalModel :: IO (Data.IORef.IORef Model)
 initGlobalModel = newIORef (Model
                             ""  -- debugData
-                           ,0  -- eaten
-                           ,[]  -- foodItems
-                           ,Pause -- gameField
-                           ,1  -- snakeLength
-                           ,HeadingRight  -- heading
-                           ,400  -- height
-                           ,32  -- lastKey
-                           ,25  -- scale
-                           ,[(6,7),(5,7)]  -- snake
-                           ,500  -- tickInterval
+                           0  -- eaten
+                           []  -- foodItems
+                           Pause -- gameField
+                           1  -- snakeLength
+                           HeadingRight  -- heading
+                           400  -- height
+                           32  -- lastKey
+                           25  -- scale
+                           [(6,7),(5,7)]  -- snake
+                           500  -- tickInterval
                            -- -- time
-                           ,600  -- width
+                           600  -- width
                            )
 -- helpers ----------------------------------------
 
@@ -115,9 +115,10 @@ drawCanvas canvas model = do
 -- update ----------------------------------------
 
 updateGlobalModel :: Integer -> Model -> Model
-updateGlobalModel kv oldModel = Model newKv newHeading
+updateGlobalModel kv oldModel = updateFields oldModel
     where newKv      = fromIntegral kv
           newHeading = keyToHeading newKv `ifNoneThen` heading oldModel
+          updateFields m = m {lastKey = newKv, heading = newHeading}
 
 -- main ----------------------------------------
 
