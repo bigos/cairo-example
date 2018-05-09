@@ -47,19 +47,20 @@ data KeyControl = KeyPause | KeyLeft | KeyUp | KeyRight | KeyDown | KeyOther
 
 initGlobalModel :: IO (Data.IORef.IORef Model)
 initGlobalModel = newIORef (Model
-                            ""  -- debugData
-                           0  -- eaten
-                           []  -- foodItems
-                           Pause -- gameField
-                           1  -- snakeLength
-                           HeadingRight  -- heading
-                           400  -- height
-                           32  -- lastKey
-                           25  -- scale
-                           [(6,7),(5,7)]  -- snake
-                           500  -- tickInterval
-                           -- -- time
-                           600  -- width
+                           {
+                           debugData=""
+                           , eaten=0
+                           , foodItems=[]
+                           , gameField=Pause
+                           , snakeLength=1
+                           , heading=HeadingRight
+                           , height=400
+                           , lastKey=32
+                           , scale=25
+                           , snake=[(6,7),(5,7)]
+                           , tickInterval=500 -- time
+                           , width=600
+                           }
                            )
 -- helpers ----------------------------------------
 
