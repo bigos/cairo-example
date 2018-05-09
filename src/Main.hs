@@ -47,19 +47,19 @@ data KeyControl = KeyPause | KeyLeft | KeyUp | KeyRight | KeyDown | KeyOther
 
 initGlobalModel :: IO (Data.IORef.IORef Model)
 initGlobalModel = newIORef (Model
-                            ""  -- debugData :: String
-                           ,0  -- , eaten :: Int
-                           ,[]  -- , foodItems :: FoodItems
-                           ,Pause -- , gameField :: GameField
-                           ,1  -- , snakeLength :: Int
-                           ,HeadingRight  -- , heading :: Heading
-                           ,400  -- , height :: Int
-                           ,32  -- , lastKey :: LastKey        -- different in elm version
-                           ,25  -- , scale :: Int
-                           ,[(6,7),(5,7)]  -- , snake :: Snake
-                           ,500  -- , tickInterval :: Float
-                           -- -- , time :: Maybe Time
-                           ,600  -- , width :: Int
+                            ""  -- debugData
+                           ,0  -- eaten
+                           ,[]  -- foodItems
+                           ,Pause -- gameField
+                           ,1  -- snakeLength
+                           ,HeadingRight  -- heading
+                           ,400  -- height
+                           ,32  -- lastKey
+                           ,25  -- scale
+                           ,[(6,7),(5,7)]  -- snake
+                           ,500  -- tickInterval
+                           -- -- time
+                           ,600  -- width
                            )
 -- helpers ----------------------------------------
 
