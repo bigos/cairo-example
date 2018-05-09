@@ -46,22 +46,20 @@ data Heading = HeadingLeft | HeadingUp | HeadingRight | HeadingDown | None deriv
 data KeyControl = KeyPause | KeyLeft | KeyUp | KeyRight | KeyDown | KeyOther
 
 initGlobalModel :: IO (Data.IORef.IORef Model)
-initGlobalModel = newIORef (Model
-                           {
-                           debugData=""
-                           , eaten=0
-                           , foodItems=[]
-                           , gameField=Pause
-                           , snakeLength=1
-                           , heading=HeadingRight
-                           , height=400
-                           , lastKey=32
-                           , scale=25
-                           , snake=[(6,7),(5,7)]
-                           , tickInterval=500 -- time
-                           , width=600
-                           }
-                           )
+initGlobalModel = newIORef (Model {
+                               debugData = ""
+                               , eaten = 0
+                               , foodItems = []
+                               , gameField = Pause
+                               , snakeLength = 1
+                               , heading = HeadingRight
+                               , Main.height = 400
+                               , lastKey = 32
+                               , Main.scale = 25
+                               , snake = [(6,7),(5,7)]
+                               , tickInterval = 500 -- time
+                               , Main.width = 600})
+
 -- helpers ----------------------------------------
 
 -- | This function bridges gi-cairo with the hand-written cairo
