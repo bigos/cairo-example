@@ -8,7 +8,7 @@ import Data.IORef (IORef, newIORef, readIORef, modifyIORef')
 import Control.Monad.Trans.Reader (runReaderT)
 import           Foreign.Ptr (castPtr)
 import qualified GI.Cairo as GICairo
--- import qualified GI.GLib as GLib
+import qualified GI.GLib as GLib
 import qualified GI.Gtk as Gtk
 import qualified GI.Gdk as Gdk
 
@@ -85,12 +85,15 @@ drawCanvas canvas model = do
 
 -- update ----------------------------------------
 
-updateModel :: Integer -> Model -> Model
-updateModel kv oldModel = Model newKv newHeading
+updateGlobalModel :: Integer -> Model -> Model
+updateGlobalModel kv oldModel = Model newKv newHeading
     where newKv      = fromIntegral kv
           newHeading = keyToHeading newKv `ifNoneThen` heading oldModel
 
 -- main ----------------------------------------
+
+timeToMove = do
+  putStrLn "move on"
 
 main :: IO ()
 main = do
@@ -102,6 +105,8 @@ main = do
   canvas <- Gtk.drawingAreaNew
   Gtk.containerAdd win canvas
 
+  _ <- GLib.timeoutAdd GLib.PRIORITY_DEFAULT 1000 (timeToMove >> Gtk.widgetQueueDraw canvas >> return True)
+
   _ <- Gtk.onWidgetDraw canvas $ \context ->
     getWidgetSize canvas >>= (\ss->  putStrLn ("drawing event - widget size " ++ (show ss))) >>
     readIORef globalModel >>=
@@ -112,10 +117,10 @@ main = do
     kv <- Gdk.getEventKeyKeyval rkv
 
     -- update globalModel in place
-    modifyIORef' globalModel (updateModel (fromIntegral kv))
+    modifyIORef' globalModel (updateGlobalModel (fromIntegral kv))
 
     -- this forces redrawing of canvas widget
-    Gtk.widgetQueueDraw canvas
+    --Gtk.widgetQueueDraw canvas
     readIORef globalModel >>=
       (\ov ->
          (putStrLn ( "You have pressed key code"  ++ (show ov))))  >> pure True
