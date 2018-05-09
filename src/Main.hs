@@ -2,6 +2,8 @@
 
 module Main where
 
+-- imports ----------------------------------------
+
 import Data.IORef (newIORef, readIORef, modifyIORef')
 import Control.Monad.Trans.Reader (runReaderT)
 import           Foreign.Ptr (castPtr)
@@ -17,12 +19,16 @@ import Graphics.Rendering.Cairo.Types (Cairo(Cairo))
 
 import GI.Gtk.Enums (WindowType(..))
 
+-- model ----------------------------------------
+
 type LastKey = Integer
 data Heading = Hleft | Hup | Hright | Hdown | None deriving (Eq, Show)
 
 data Model = Model { lastKey :: LastKey
                    , heading :: Heading
                    } deriving (Show)
+
+-- helpers ----------------------------------------
 
 -- | This function bridges gi-cairo with the hand-written cairo
 -- package. It takes a `GI.Cairo.Context` (as it appears in gi-cairo),
@@ -37,6 +43,20 @@ getWidgetSize widget = do
   width'  <- fromIntegral <$> Gtk.widgetGetAllocatedWidth widget
   height' <- fromIntegral <$> Gtk.widgetGetAllocatedHeight widget
   return (width', height')
+
+keyToHeading :: LastKey -> Heading
+keyToHeading lk
+  | lk == 65361 = Hleft
+  | lk == 65362 = Hup
+  | lk == 65363 = Hright
+  | lk == 65364 = Hdown
+  | otherwise = None
+
+ifNoneThen :: Heading -> Heading -> Heading
+None `ifNoneThen` x = x
+h    `ifNoneThen` _ = h
+
+-- view ----------------------------------------
 
 updateCanvas :: Gtk.DrawingArea -> Model -> Render ()
 updateCanvas canvas model = do
@@ -58,22 +78,14 @@ updateCanvas canvas model = do
   stroke
   where offset = 30
 
-keyToHeading :: LastKey -> Heading
-keyToHeading lk
-  | lk == 65361 = Hleft
-  | lk == 65362 = Hup
-  | lk == 65363 = Hright
-  | lk == 65364 = Hdown
-  | otherwise = None
-
-ifNoneThen :: Heading -> Heading -> Heading
-None `ifNoneThen` x = x
-h    `ifNoneThen` _ = h
+-- update ----------------------------------------
 
 updateModel :: Integer -> Model -> Model
 updateModel kv oldModel = Model newKv newHeading
     where newKv      = fromIntegral kv
           newHeading = keyToHeading newKv `ifNoneThen` heading oldModel
+
+-- main ----------------------------------------
 
 main = do
   _ <- Gtk.init  Nothing
