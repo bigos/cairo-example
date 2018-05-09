@@ -21,17 +21,46 @@ import GI.Gtk.Enums (WindowType(..))
 
 -- model ----------------------------------------
 
+type Coordinate = (Int, Int)
+type FoodItems = [Coordinate]
+type Snake = [Coordinate]
 type LastKey = Integer
-data Heading = HeadingLeft | HeadingUp | HeadingRight | HeadingDown | None deriving (Eq, Show)
+data GameField = Move | Feeding | Collision | Pause deriving (Show)
+data Model = Model {
+  debugData :: String
+  , eaten :: Int
+  , foodItems :: FoodItems
+  , gameField :: GameField
+  , snakeLength :: Int
+  , heading :: Heading
+  , height :: Int
+  , lastKey :: LastKey        -- different in elm version
+  , scale :: Int
+  , snake :: Snake
+  , tickInterval :: Float
+  -- , time :: Maybe Time
+  , width :: Int
+  } deriving (Show)
 
-data Model = Model { lastKey :: LastKey
-                   , heading :: Heading
-                   } deriving (Show)
+data Heading = HeadingLeft | HeadingUp | HeadingRight | HeadingDown | None deriving (Eq, Show)
+data KeyControl = KeyPause | KeyLeft | KeyUp | KeyRight | KeyDown | KeyOther
 
 initGlobalModel :: IO (Data.IORef.IORef Model)
 initGlobalModel = newIORef (Model
-                           0
-                           HeadingRight)
+                            ""  -- debugData :: String
+                           ,0  -- , eaten :: Int
+                           ,[]  -- , foodItems :: FoodItems
+                           ,Pause -- , gameField :: GameField
+                           ,1  -- , snakeLength :: Int
+                           ,HeadingRight  -- , heading :: Heading
+                           ,400  -- , height :: Int
+                           ,32  -- , lastKey :: LastKey        -- different in elm version
+                           ,25  -- , scale :: Int
+                           ,[(6,7),(5,7)]  -- , snake :: Snake
+                           ,500  -- , tickInterval :: Float
+                           -- -- , time :: Maybe Time
+                           ,600  -- , width :: Int
+                           )
 -- helpers ----------------------------------------
 
 -- | This function bridges gi-cairo with the hand-written cairo
@@ -120,7 +149,7 @@ main = do
     modifyIORef' globalModel (updateGlobalModel (fromIntegral kv))
 
     -- this forces redrawing of canvas widget
-    --Gtk.widgetQueueDraw canvas
+    Gtk.widgetQueueDraw canvas
     readIORef globalModel >>=
       (\ov ->
          (putStrLn ( "You have pressed key code"  ++ (show ov))))  >> pure True
