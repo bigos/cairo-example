@@ -55,7 +55,7 @@ initialModel = Model { debugData = ""
                   , heading = HeadingRight
                   , Main.height = 400
                   , lastKey = 32
-                  , Main.scale = 25
+                  , Main.scale = 15
                   , snake = [(6,7),(5,7)]
                   , tickInterval = 500 -- time
                   , Main.width = 600 }
@@ -141,20 +141,18 @@ drawCanvas canvas model = do
   setLineCap LineCapRound
   setLineJoin LineJoinRound
 
-  moveTo (mwidth / 2) (mheight / 2)
-  case (heading model) of HeadingLeft ->  lineTo (0+offset) (mheight/2)
-                          HeadingUp ->    lineTo (mwidth/2) (0+offset)
-                          HeadingRight -> lineTo (mwidth-offset) (mheight/2)
-                          HeadingDown ->  lineTo (mwidth/2) (mheight-offset)
-                          None ->         lineTo (mwidth / 2) (mheight / 2)
+  setSourceRGB 0.8 1 0.2
+  setLineWidth 10
+  mapM_ (\c -> moveTo (xc c) (yc c) >> lineTo (xc c) (yc c)) (foodItems model)
   stroke
 
   setSourceRGB 0 0.5 1
   setLineWidth 5
-  moveTo (fromIntegral (fst (head (snake model))))  (fromIntegral (snd (head (snake model))))
-  mapM_ (\(cx,cy) -> lineTo (fromIntegral cx) (fromIntegral cy)) (snake model)
+  moveTo (xc (head (snake model))) (yc (head (snake model)))
+  mapM_ (\c -> lineTo (xc c) (yc c)) (snake model)
   stroke
-  where offset = 30
+  where xc c = fromIntegral $ (Main.scale model) * (fst c)
+        yc c = fromIntegral $ (Main.scale model) * (snd c)
 
 -- update ----------------------------------------
 
@@ -177,7 +175,9 @@ updateGlobalModel :: Msg -> Model -> Model
 -- updateGlobalModel (Tick) rawModel | trace (show ("\n===> ",rawModel)) True = updateTickFields model
 updateGlobalModel (Tick) rawModel = updateTickFields model
   where model = cook rawModel
+        moreFood model' = if ((foodItems model') == []) then [(3,3), (4,4), (5,5)] else foodItems model'
         updateTickFields m = m { gameField = updateGamefield False model (lastKey model)
+                               , foodItems = moreFood model
                                , snake = moveSnake model (heading model) }
 updateGlobalModel (Keypress kv) oldModel = updateFields oldModel
     where newKv      = fromIntegral kv
