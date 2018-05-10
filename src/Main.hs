@@ -50,7 +50,7 @@ initialModel :: Model
 initialModel = Model { debugData = ""
                   , eaten = 0
                   , foodItems = []
-                  , gameField = Pause
+                  , gameField = Move
                   , snakeLength = 1
                   , heading = HeadingRight
                   , Main.height = 400
@@ -60,12 +60,44 @@ initialModel = Model { debugData = ""
                   , tickInterval = 500 -- time
                   , Main.width = 600 }
 
-initGlobalModel :: IO (IORef Model)
-initGlobalModel = newIORef initialModel
-
 -- in the above example Main.height is explained here with following text
 -- https://en.wikibooks.org/wiki/Haskell/More_on_datatypes
 -- This will automatically generate the following accessor functions for us:
+
+initGlobalModel :: IO (IORef Model)
+initGlobalModel = newIORef initialModel
+
+shrink :: Int -> Int
+shrink n = if (n-1) > 0 then n-1 else 0
+
+foodUnderHead :: Coordinate -> Model -> Bool
+foodUnderHead c model =
+  (fst c)==cx && (snd c)==cy
+  where hsm = head (snake model)
+        cx = fst hsm
+        cy = snd hsm
+
+foodEaten :: Model -> Bool
+foodEaten model =
+  any id (map (\c -> (fst c)==cx && (snd c)==cy) (foodItems model))
+  where hsm = head (snake model)
+        cx = fst hsm
+        cy = snd hsm
+
+headBitSnake :: Model -> Bool
+headBitSnake model = any id (map (\c -> (fst c) == cx && (snd c) == cy) (drop 1 (snake model)))
+  where hsm = head (snake model)
+        cx = fst hsm
+        cy = snd hsm
+
+headHitWall :: Model -> Bool
+headHitWall model = False       -- TODO: finish me
+
+detectCollision :: Model -> GameField
+detectCollision model =
+  if headHitWall model || headBitSnake model
+  then Collision
+  else gameField model
 
 -- helpers ----------------------------------------
 
@@ -120,23 +152,46 @@ drawCanvas canvas model = do
 
 -- update ----------------------------------------
 
+data Msg = Tick | Keypress LastKey deriving (Show)
 
-shrink :: Int -> Int
-shrink n = if (n-1) > 0 then n-1 else 0
+cook :: Model -> Model
+cook model =
+  if foodEaten model
+  then model { gameField = detectCollision model
+             , snakeLength = (snakeLength model) +3
+             , foodItems = filter (\c -> not (foodUnderHead c model)) (foodItems model)
+             , debugData = "" --show ("** eaten ** ", head (snake model), (foodItems model))
+             , eaten = (eaten model) + 1
+             }
+  else model { gameField = detectCollision model
+             , snakeLength = shrink (snakeLength model)
+             , debugData = "" }
 
-foodUnderHead :: Coordinate -> Model -> Bool
-foodUnderHead c model =
-  (fst c)==cx && (snd c)==cy
-  where hsm = head (snake model)
-        cx = fst hsm
-        cy = snd hsm
+updateGlobalModel :: Msg -> Model -> Model
+-- updateGlobalModel (Tick) rawModel | trace (show ("\n===> ",rawModel)) True = updateTickFields model
+updateGlobalModel (Tick) rawModel = updateTickFields model
+  where model = cook rawModel
+        updateTickFields m = m { gameField = updateGamefield False model (lastKey model)
+                               , snake = moveSnake model (heading model) }
+updateGlobalModel (Keypress kv) oldModel = updateFields oldModel
+    where newKv      = fromIntegral kv
+          newHeading = keyToHeading newKv `ifNoneThen` heading oldModel
+          model = cook oldModel
+          updateFields m = m { lastKey = newKv
+                             , heading = newHeading
+                             , gameField = updateGamefield True model kv
+                             , snake = moveSnake model (heading model) }
 
-foodEaten :: Model -> Bool
-foodEaten model =
-  any id (map (\c -> (fst c)==cx && (snd c)==cy) (foodItems model))
-  where hsm = head (snake model)
-        cx = fst hsm
-        cy = snd hsm
+updateGamefield :: (Num a, Eq a) => Bool -> Model -> a -> GameField
+updateGamefield keyEvent model kk =
+  if keyEvent
+  then case (gameField model) of
+    Pause -> Move
+    Move -> if kk == 32
+      then Pause
+      else gameField model
+    _ -> gameField model
+  else gameField model
 
 snakeGrower :: Int -> Snake -> Snake
 snakeGrower growth snakecc =
@@ -163,68 +218,7 @@ moveSnake2 model headingv | trace ("move snake2 " ++ (show headingv)) True =
         growth = snakeLength model
         uhs = head snake'
 
-updateGamefield :: (Num a, Eq a) => Bool -> Model -> a -> GameField
-updateGamefield keyEvent model kk =
-  if keyEvent
-  then case (gameField model) of
-    Pause -> Move
-    Move -> if kk == 32
-      then Pause
-      else gameField model
-    _ -> gameField model
-  else gameField model
-
-headHitWall :: Model -> Bool
-headHitWall model = False
-
-headBitSnake :: Model -> Bool
-headBitSnake model = any id (map (\c -> (fst c) == cx && (snd c) == cy) (drop 1 (snake model)))
-  where hsm = head (snake model)
-        cx = fst hsm
-        cy = snd hsm
-
-detectCollision :: Model -> GameField
-detectCollision model =
-  if headHitWall model || headBitSnake model
-  then Collision
-  else gameField model
-
-cook :: Model -> Model
-cook model =
-  if foodEaten model
-  then model { gameField = detectCollision model
-             , snakeLength = (snakeLength model) +3
-             , foodItems = filter (\c -> not (foodUnderHead c model)) (foodItems model)
-             , debugData = "" --show ("** eaten ** ", head (snake model), (foodItems model))
-             , eaten = (eaten model) + 1
-             }
-  else model { gameField = detectCollision model
-             , snakeLength = shrink (snakeLength model)
-             , debugData = "" }
-
-data Msg = Tick | Keypress LastKey deriving (Show)
-
-updateGlobalModel :: Msg -> Model -> Model
-updateGlobalModel (Tick) rawModel | trace (show ("=====> updating tick", rawModel)) True = updateTickFields model
-  where model = cook rawModel
-        updateTickFields m = m { gameField = updateGamefield False model (lastKey model)
-                               , snake = moveSnake model (heading model) }
-updateGlobalModel (Keypress kv) oldModel = updateFields oldModel
-    where newKv      = fromIntegral kv
-          newHeading = keyToHeading newKv `ifNoneThen` heading oldModel
-          updateFields m = m {lastKey = newKv, heading = newHeading}
-
--- updateGlobalModel (NewFood fi) oldModel =
-
 -- main ----------------------------------------
-
---tickFun :: IORef Model -> IO ()
-tickFun m = do
-  modifyIORef' m (updateGlobalModel Tick)
-
-debugBlobalModel gm str = do
-  m <- readIORef gm
-  putStrLn ("\ndebugging model " ++ str++ " " ++(show m))
 
 main :: IO ()
 main = do
@@ -236,10 +230,7 @@ main = do
   canvas <- Gtk.drawingAreaNew
   Gtk.containerAdd win canvas
 
-  _ <- GLib.timeoutAdd GLib.PRIORITY_DEFAULT 1000 ( debugBlobalModel globalModel "first" >>
-                                                    tickFun globalModel >>
-                                                    putStrLn "going to debug the model" >>
-                                                    debugBlobalModel globalModel "second" >>
+  _ <- GLib.timeoutAdd GLib.PRIORITY_DEFAULT 1000 ( modifyIORef' globalModel (updateGlobalModel Tick) >>
                                                     Gtk.widgetQueueDraw canvas >> return True)
 
   _ <- Gtk.onWidgetDraw canvas $ \context ->
