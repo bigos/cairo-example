@@ -148,6 +148,12 @@ drawCanvas canvas model = do
                           HeadingDown ->  lineTo (mwidth/2) (mheight-offset)
                           None ->         lineTo (mwidth / 2) (mheight / 2)
   stroke
+
+  setSourceRGB 0 0.5 1
+  setLineWidth 5
+  moveTo (fromIntegral (fst (head (snake model))))  (fromIntegral (snd (head (snake model))))
+  mapM_ (\(cx,cy) -> lineTo (fromIntegral cx) (fromIntegral cy)) (snake model)
+  stroke
   where offset = 30
 
 -- update ----------------------------------------
@@ -160,7 +166,7 @@ cook model =
   then model { gameField = detectCollision model
              , snakeLength = (snakeLength model) +3
              , foodItems = filter (\c -> not (foodUnderHead c model)) (foodItems model)
-             , debugData = "" --show ("** eaten ** ", head (snake model), (foodItems model))
+             , debugData = (show ("** eaten ** ", head (snake model), (foodItems model)))
              , eaten = (eaten model) + 1
              }
   else model { gameField = detectCollision model
@@ -230,7 +236,7 @@ main = do
   canvas <- Gtk.drawingAreaNew
   Gtk.containerAdd win canvas
 
-  _ <- GLib.timeoutAdd GLib.PRIORITY_DEFAULT 1000 ( modifyIORef' globalModel (updateGlobalModel Tick) >>
+  _ <- GLib.timeoutAdd GLib.PRIORITY_DEFAULT 500 ( modifyIORef' globalModel (updateGlobalModel Tick) >>
                                                     Gtk.widgetQueueDraw canvas >> return True)
 
   _ <- Gtk.onWidgetDraw canvas $ \context ->
