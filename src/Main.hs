@@ -46,19 +46,21 @@ data Model = Model {
 data Heading = HeadingLeft | HeadingUp | HeadingRight | HeadingDown | None deriving (Eq, Show)
 data KeyControl = KeyPause | KeyLeft | KeyUp | KeyRight | KeyDown | KeyOther
 
+initModel = Model { debugData = ""
+                  , eaten = 0
+                  , foodItems = []
+                  , gameField = Pause
+                  , snakeLength = 1
+                  , heading = HeadingRight
+                  , Main.height = 400 -- does Haskell use functions to find record elements?
+                  , lastKey = 32
+                  , Main.scale = 25
+                  , snake = [(6,7),(5,7)]
+                  , tickInterval = 500 -- time
+                  , Main.width = 600 }
+
 initGlobalModel :: IO (IORef Model)
-initGlobalModel = newIORef (Model { debugData = ""
-                                  , eaten = 0
-                                  , foodItems = []
-                                  , gameField = Pause
-                                  , snakeLength = 1
-                                  , heading = HeadingRight
-                                  , Main.height = 400 -- does Haskell use functions to find record elements?
-                                  , lastKey = 32
-                                  , Main.scale = 25
-                                  , snake = [(6,7),(5,7)]
-                                  , tickInterval = 500 -- time
-                                  , Main.width = 600 })
+initGlobalModel = newIORef initModel
 
 -- in the above example Main.height is explained here with following text
 -- https://en.wikibooks.org/wiki/Haskell/More_on_datatypes
