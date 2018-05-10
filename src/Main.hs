@@ -25,7 +25,7 @@ type Coordinate = (Int, Int)
 type FoodItems = [Coordinate]
 type Snake = [Coordinate]
 type LastKey = Integer
-data GameField = Move | Feeding | Collision | Pause deriving (Show)
+data GameField = Move | Feeding | Collision | Pause deriving (Show, Eq)
 data Model = Model {
   debugData :: String
   , eaten :: Int
@@ -116,24 +116,88 @@ drawCanvas canvas model = do
 
 -- update ----------------------------------------
 
--- TODO: find how to use those types
-data Msg = NoOp | Keypress LastKey | NewFood FoodItems deriving (Show)
 
--- example use of more complex types
-updatino :: Msg -> Int -> String
-updatino (Keypress a) num = ("keypress " ++ show num ++ " " ++ show a)
-updatino (NewFood fi) num = ("newFood " ++ show num ++ " " ++ show fi)
+shrink :: Int -> Int
+shrink n = if (n-1) > 0 then n-1 else 0
 
+foodUnderHead :: Coordinate -> Model -> Bool
+foodUnderHead c model =
+  (fst c)==cx && (snd c)==cy
+  where hsm = head (snake model)
+        cx = fst hsm
+        cy = snd hsm
 
+foodEaten :: Model -> Bool
+foodEaten model =
+  any id (map (\c -> (fst c)==cx && (snd c)==cy) (foodItems model))
+  where hsm = head (snake model)
+        cx = fst hsm
+        cy = snd hsm
+
+snakeGrower :: Int -> Snake -> Snake
+snakeGrower growth snakecc =
+  case (compare growth 0) of
+    GT -> snakecc
+    EQ -> init snakecc
+    LT -> init $ init snakecc
+
+moveSnake :: Model -> Heading -> Snake
+moveSnake model headingv =
+  if ((gameField model == Pause) || (gameField model) == Collision)
+  then (snake model)
+  else moveSnake2 model headingv
+
+moveSnake2 :: Model -> Heading -> Snake
+moveSnake2 model headingv =
+  case headingv of
+    HeadingLeft ->  (fst uhs-1, snd uhs) : snakeGrower growth snake'
+    HeadingUp ->    (fst uhs, snd uhs-1) : snakeGrower growth snake'
+    HeadingRight -> (fst uhs+1, snd uhs) : snakeGrower growth snake'
+    HeadingDown ->  (fst uhs, snd uhs+1) : snakeGrower growth snake'
+  where snake' = snake model
+        growth = snakeLength model
+        uhs = head snake'
+
+updateGamefield :: (Num a, Eq a) => Bool -> Model -> a -> GameField
+updateGamefield keyEvent model kk =
+  if keyEvent
+  then case (gameField model) of
+    Pause -> Move
+    Move -> if kk == 32
+      then Pause
+      else gameField model
+    _ -> gameField model
+
+  else gameField model
+
+cook :: Model -> Model
+cook model =
+  if foodEaten model
+  then model { gameField = undefined
+             , snakeLength = (snakeLength model) +3
+             , foodItems = filter (\c -> not (foodUnderHead c model)) (foodItems model)
+             , debugData = "" --show ("** eaten ** ", head (snake model), (foodItems model))
+             , eaten = (eaten model) + 1
+             }
+  else model { gameField = undefined
+             , snakeLength = shrink (snakeLength model)
+             , debugData = "" }
+
+data Msg = Tick | Keypress LastKey | NewFood FoodItems deriving (Show)
+
+updateGlobalModel :: Msg -> Model -> Model
+updateGlobalModel (Tick) rawModel = updateTickFields model
+  where model = cook rawModel
+        updateTickFields m = m { gameField = updateGamefield False model (lastKey model)
+                               , snake = moveSnake model (heading model) }
 updateGlobalModel (Keypress kv) oldModel = updateFields oldModel
     where newKv      = fromIntegral kv
           newHeading = keyToHeading newKv `ifNoneThen` heading oldModel
           updateFields m = m {lastKey = newKv, heading = newHeading}
 
--- main ----------------------------------------
+-- updateGlobalModel (NewFood fi) oldModel =
 
-timeToMove = do
-  putStrLn "move on"
+-- main ----------------------------------------
 
 main :: IO ()
 main = do
@@ -145,7 +209,7 @@ main = do
   canvas <- Gtk.drawingAreaNew
   Gtk.containerAdd win canvas
 
-  _ <- GLib.timeoutAdd GLib.PRIORITY_DEFAULT 1000 (timeToMove >> Gtk.widgetQueueDraw canvas >> return True)
+  _ <- GLib.timeoutAdd GLib.PRIORITY_DEFAULT 1000 (modifyIORef' globalModel (updateGlobalModel Tick) >> Gtk.widgetQueueDraw canvas >> return True)
 
   _ <- Gtk.onWidgetDraw canvas $ \context ->
     getWidgetSize canvas >>= (\ss->  putStrLn ("drawing event - widget size " ++ (show ss))) >>
