@@ -5,18 +5,29 @@ module Main where
 -- imports ----------------------------------------
 
 import Debug.Trace
+-- import Data.List
+-- import System.Random
 import Data.IORef (IORef, newIORef, readIORef, modifyIORef')
 import Control.Monad.Trans.Reader (runReaderT)
 import           Foreign.Ptr (castPtr)
 import qualified GI.Cairo as GICairo
-import qualified GI.GLib as GLib
+import qualified GI.GLib (timeoutAdd)
+import qualified GI.GLib.Constants
 import qualified GI.Gtk as Gtk
 import qualified GI.Gdk as Gdk
 
-import Graphics.Rendering.Cairo
+import Graphics.Rendering.Cairo ( lineTo
+                                , moveTo
+                                , setLineCap
+                                , setLineJoin
+                                , setLineWidth
+                                , setSourceRGB
+                                , stroke )
+
 import Graphics.Rendering.Cairo.Internal (Render(runRender))
-import Graphics.Rendering.Cairo.Types (Cairo(Cairo))
--- import Data.GI.Base.ManagedPtr
+import Graphics.Rendering.Cairo.Types ( Cairo(Cairo)
+                                      , LineCap(..)
+                                      , LineJoin(..) )
 
 import GI.Gtk.Enums (WindowType(..))
 
@@ -48,17 +59,17 @@ data KeyControl = KeyPause | KeyLeft | KeyUp | KeyRight | KeyDown | KeyOther
 
 initialModel :: Model
 initialModel = Model { debugData = ""
-                  , eaten = 0
-                  , foodItems = []
-                  , gameField = Move
-                  , snakeLength = 1
-                  , heading = HeadingRight
-                  , Main.height = 400
-                  , lastKey = 32
-                  , Main.scale = 15
-                  , snake = [(6,7),(5,7)]
-                  , tickInterval = 500 -- time
-                  , Main.width = 600 }
+                     , eaten = 0
+                     , foodItems = []
+                     , gameField = Move
+                     , snakeLength = 1
+                     , heading = HeadingRight
+                     , Main.height = 400
+                     , lastKey = 32
+                     , Main.scale = 15
+                     , snake = [(6,7),(5,7)]
+                     , tickInterval = 500 -- time
+                     , Main.width = 600 }
 
 -- in the above example Main.height is explained here with following text
 -- https://en.wikibooks.org/wiki/Haskell/More_on_datatypes
@@ -106,7 +117,7 @@ detectCollision model =
 -- and a `Render` action (as in the cairo lib), and renders the
 -- `Render` action into the given context.
 renderWithContext :: GICairo.Context -> Render () -> IO ()
-renderWithContext ct r = Gdk.withManagedPtr ct $ \p ->
+renderWithContext ct r = GICairo.withManagedPtr ct $ \p ->
   runReaderT (runRender r) (Cairo (castPtr p))
 
 getWidgetSize :: Gtk.DrawingArea -> IO (Int, Int)
@@ -130,22 +141,20 @@ h    `ifNoneThen` _ = h
 -- view ----------------------------------------
 
 drawCanvas :: Gtk.DrawingArea -> Model -> Render ()
-drawCanvas canvas model = do
-  size <- liftIO (getWidgetSize canvas)
-  let mwidth  = fromIntegral (fst size)
-      mheight = fromIntegral (snd size)
-
+drawCanvas _ model = do
   -- drawing changes color when you press 'a' on keyboard
   if (lastKey model) == 97 then setSourceRGB 0.9 0.5 0 else setSourceRGB 0.6 0.9 0
   setLineWidth 20
   setLineCap LineCapRound
   setLineJoin LineJoinRound
 
+  -- draw snakes food
   setSourceRGB 0.8 1 0.2
   setLineWidth 10
   mapM_ (\c -> moveTo (xc c) (yc c) >> lineTo (xc c) (yc c)) (foodItems model)
   stroke
 
+  -- draw snake
   setSourceRGB 0 0.5 1
   setLineWidth 5
   moveTo (xc (head (snake model))) (yc (head (snake model)))
@@ -236,7 +245,7 @@ main = do
   canvas <- Gtk.drawingAreaNew
   Gtk.containerAdd win canvas
 
-  _ <- GLib.timeoutAdd GLib.PRIORITY_DEFAULT 500 ( modifyIORef' globalModel (updateGlobalModel Tick) >>
+  _ <- GI.GLib.timeoutAdd GI.GLib.Constants.PRIORITY_DEFAULT 500 ( modifyIORef' globalModel (updateGlobalModel Tick) >>
                                                     Gtk.widgetQueueDraw canvas >> return True)
 
   _ <- Gtk.onWidgetDraw canvas $ \context ->

@@ -27,4 +27,5 @@ executable cairo-example
                      , transformers -any
                      , array -any
                      , gi-cairo -any
+                     , random -any
                      , cairo >=0.13.1.1 && <0.14
