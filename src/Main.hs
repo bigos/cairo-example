@@ -59,6 +59,10 @@ initGlobalModel = newIORef (Model { debugData = ""
                                   , tickInterval = 500 -- time
                                   , Main.width = 600 })
 
+-- in the above example Main.height is explained here with following text
+-- https://en.wikibooks.org/wiki/Haskell/More_on_datatypes
+-- This will automatically generate the following accessor functions for us:
+
 -- helpers ----------------------------------------
 
 -- | This function bridges gi-cairo with the hand-written cairo
@@ -113,10 +117,15 @@ drawCanvas canvas model = do
 -- update ----------------------------------------
 
 -- TODO: find how to use those types
-data Msg = NoOp | Tick Int | Keypress LastKey | NewFood FoodItems
+data Msg = NoOp | Keypress LastKey | NewFood FoodItems deriving (Show)
 
-updateGlobalModel :: Integer -> Model -> Model
-updateGlobalModel kv oldModel = updateFields oldModel
+-- example use of more complex types
+updatino :: Msg -> Int -> String
+updatino (Keypress a) num = ("keypress " ++ show num ++ " " ++ show a)
+updatino (NewFood fi) num = ("newFood " ++ show num ++ " " ++ show fi)
+
+
+updateGlobalModel (Keypress kv) oldModel = updateFields oldModel
     where newKv      = fromIntegral kv
           newHeading = keyToHeading newKv `ifNoneThen` heading oldModel
           updateFields m = m {lastKey = newKv, heading = newHeading}
@@ -148,7 +157,7 @@ main = do
     kv <- Gdk.getEventKeyKeyval rkv
 
     -- update globalModel in place
-    modifyIORef' globalModel (updateGlobalModel (fromIntegral kv))
+    modifyIORef' globalModel (updateGlobalModel (Keypress (fromIntegral kv)))
 
     -- this forces redrawing of canvas widget
     Gtk.widgetQueueDraw canvas
