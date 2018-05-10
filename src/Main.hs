@@ -46,13 +46,14 @@ data Model = Model {
 data Heading = HeadingLeft | HeadingUp | HeadingRight | HeadingDown | None deriving (Eq, Show)
 data KeyControl = KeyPause | KeyLeft | KeyUp | KeyRight | KeyDown | KeyOther
 
-initModel = Model { debugData = ""
+initialModel :: Model
+initialModel = Model { debugData = ""
                   , eaten = 0
                   , foodItems = []
                   , gameField = Pause
                   , snakeLength = 1
                   , heading = HeadingRight
-                  , Main.height = 400 -- does Haskell use functions to find record elements?
+                  , Main.height = 400
                   , lastKey = 32
                   , Main.scale = 25
                   , snake = [(6,7),(5,7)]
@@ -60,7 +61,7 @@ initModel = Model { debugData = ""
                   , Main.width = 600 }
 
 initGlobalModel :: IO (IORef Model)
-initGlobalModel = newIORef initModel
+initGlobalModel = newIORef initialModel
 
 -- in the above example Main.height is explained here with following text
 -- https://en.wikibooks.org/wiki/Haskell/More_on_datatypes
@@ -145,13 +146,13 @@ snakeGrower growth snakecc =
     LT -> init $ init snakecc
 
 moveSnake :: Model -> Heading -> Snake
-moveSnake model headingv | trace ("move snake " ++ (show headingv)) True =
-                           if ((gameField model == Pause) || (gameField model) == Collision)
-                           then (snake model)
-                           else moveSnake2 model headingv
+moveSnake model headingv =
+  if ((gameField model == Pause) || (gameField model) == Collision)
+  then (snake model)
+  else moveSnake2 model headingv
 
 moveSnake2 :: Model -> Heading -> Snake
-moveSnake2 model headingv =
+moveSnake2 model headingv | trace ("move snake2 " ++ (show headingv)) True =
   case headingv of
     HeadingLeft ->  (fst uhs-1, snd uhs) : snakeGrower growth snake'
     HeadingUp ->    (fst uhs, snd uhs-1) : snakeGrower growth snake'
@@ -204,7 +205,7 @@ cook model =
 data Msg = Tick | Keypress LastKey deriving (Show)
 
 updateGlobalModel :: Msg -> Model -> Model
-updateGlobalModel (Tick) rawModel = updateTickFields model
+updateGlobalModel (Tick) rawModel | trace (show ("=====> updating tick", rawModel)) True = updateTickFields model
   where model = cook rawModel
         updateTickFields m = m { gameField = updateGamefield False model (lastKey model)
                                , snake = moveSnake model (heading model) }
@@ -219,8 +220,11 @@ updateGlobalModel (Keypress kv) oldModel = updateFields oldModel
 
 --tickFun :: IORef Model -> IO ()
 tickFun m = do
-  putStrLn "zzzzz"
   modifyIORef' m (updateGlobalModel Tick)
+
+debugBlobalModel gm str = do
+  m <- readIORef gm
+  putStrLn ("\ndebugging model " ++ str++ " " ++(show m))
 
 main :: IO ()
 main = do
@@ -232,7 +236,11 @@ main = do
   canvas <- Gtk.drawingAreaNew
   Gtk.containerAdd win canvas
 
-  _ <- GLib.timeoutAdd GLib.PRIORITY_DEFAULT 1000 ( tickFun globalModel >> Gtk.widgetQueueDraw canvas >> return True)
+  _ <- GLib.timeoutAdd GLib.PRIORITY_DEFAULT 1000 ( debugBlobalModel globalModel "first" >>
+                                                    tickFun globalModel >>
+                                                    putStrLn "going to debug the model" >>
+                                                    debugBlobalModel globalModel "second" >>
+                                                    Gtk.widgetQueueDraw canvas >> return True)
 
   _ <- Gtk.onWidgetDraw canvas $ \context ->
     getWidgetSize canvas >>= (\ss->  putStrLn ("drawing event - widget size " ++ (show ss))) >>
