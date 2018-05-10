@@ -7,14 +7,35 @@ module Main where
 import Debug.Trace
 -- import Data.List
 -- import System.Random
-import Data.IORef (IORef, newIORef, readIORef, modifyIORef')
+import Data.IORef ( IORef
+                  , newIORef
+                  , readIORef
+                  , modifyIORef' )
 import Control.Monad.Trans.Reader (runReaderT)
 import           Foreign.Ptr (castPtr)
+
 import qualified GI.Cairo as GICairo
+
 import qualified GI.GLib (timeoutAdd)
 import qualified GI.GLib.Constants
-import qualified GI.Gtk as Gtk
-import qualified GI.Gdk as Gdk
+
+import qualified GI.Gtk as Gtk ( DrawingArea
+                               , init
+                               , containerAdd
+                               , drawingAreaNew
+                               , main
+                               , mainQuit
+                               , onWidgetDestroy
+                               , onWidgetDraw
+                               , onWidgetKeyPressEvent
+                               , widgetGetAllocatedHeight
+                               , widgetGetAllocatedWidth
+                               , widgetQueueDraw
+                               , widgetShowAll
+                               , windowNew )
+import GI.Gtk.Enums (WindowType(..))
+
+import qualified GI.Gdk (getEventKeyKeyval)
 
 import Graphics.Rendering.Cairo ( lineTo
                                 , moveTo
@@ -23,13 +44,10 @@ import Graphics.Rendering.Cairo ( lineTo
                                 , setLineWidth
                                 , setSourceRGB
                                 , stroke )
-
 import Graphics.Rendering.Cairo.Internal (Render(runRender))
 import Graphics.Rendering.Cairo.Types ( Cairo(Cairo)
                                       , LineCap(..)
                                       , LineJoin(..) )
-
-import GI.Gtk.Enums (WindowType(..))
 
 -- model ----------------------------------------
 
@@ -255,7 +273,7 @@ main = do
     (renderWithContext context (drawCanvas canvas model))) >> pure True
 
   _ <- Gtk.onWidgetKeyPressEvent win $ \rkv -> do
-    kv <- Gdk.getEventKeyKeyval rkv
+    kv <- GI.Gdk.getEventKeyKeyval rkv
 
     -- update globalModel in place
     modifyIORef' globalModel (updateGlobalModel (Keypress (fromIntegral kv)))
