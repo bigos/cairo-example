@@ -4,6 +4,7 @@ module Main where
 
 -- imports ----------------------------------------
 
+import Debug.Trace
 import Data.IORef (IORef, newIORef, readIORef, modifyIORef')
 import Control.Monad.Trans.Reader (runReaderT)
 import           Foreign.Ptr (castPtr)
@@ -142,10 +143,10 @@ snakeGrower growth snakecc =
     LT -> init $ init snakecc
 
 moveSnake :: Model -> Heading -> Snake
-moveSnake model headingv =
-  if ((gameField model == Pause) || (gameField model) == Collision)
-  then (snake model)
-  else moveSnake2 model headingv
+moveSnake model headingv | trace ("move snake " ++ (show headingv)) True =
+                           if ((gameField model == Pause) || (gameField model) == Collision)
+                           then (snake model)
+                           else moveSnake2 model headingv
 
 moveSnake2 :: Model -> Heading -> Snake
 moveSnake2 model headingv =
@@ -170,13 +171,16 @@ updateGamefield keyEvent model kk =
     _ -> gameField model
   else gameField model
 
+headHitWall :: Model -> Bool
 headHitWall model = False
 
+headBitSnake :: Model -> Bool
 headBitSnake model = any id (map (\c -> (fst c) == cx && (snd c) == cy) (drop 1 (snake model)))
   where hsm = head (snake model)
         cx = fst hsm
         cy = snd hsm
 
+detectCollision :: Model -> GameField
 detectCollision model =
   if headHitWall model || headBitSnake model
   then Collision
@@ -211,6 +215,11 @@ updateGlobalModel (Keypress kv) oldModel = updateFields oldModel
 
 -- main ----------------------------------------
 
+--tickFun :: IORef Model -> IO ()
+tickFun m = do
+  putStrLn "zzzzz"
+  modifyIORef' m (updateGlobalModel Tick)
+
 main :: IO ()
 main = do
   _ <- Gtk.init  Nothing
@@ -221,7 +230,7 @@ main = do
   canvas <- Gtk.drawingAreaNew
   Gtk.containerAdd win canvas
 
-  _ <- GLib.timeoutAdd GLib.PRIORITY_DEFAULT 1000 (modifyIORef' globalModel (updateGlobalModel Tick) >> Gtk.widgetQueueDraw canvas >> return True)
+  _ <- GLib.timeoutAdd GLib.PRIORITY_DEFAULT 1000 ( tickFun globalModel >> Gtk.widgetQueueDraw canvas >> return True)
 
   _ <- Gtk.onWidgetDraw canvas $ \context ->
     getWidgetSize canvas >>= (\ss->  putStrLn ("drawing event - widget size " ++ (show ss))) >>
