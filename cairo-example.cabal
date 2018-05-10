@@ -22,7 +22,7 @@ executable cairo-example
                      , haskell-gi-base -any
                      , gi-glib -any
                      , gi-gtk -any
-                     , gi-gtk-hs -any
+                     , gi-gtk-hs >= 0.3.4.1 && < 0.4
                      , gi-gdk -any
                      , transformers -any
                      , array -any
