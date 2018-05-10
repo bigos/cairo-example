@@ -45,7 +45,7 @@ data Model = Model {
 data Heading = HeadingLeft | HeadingUp | HeadingRight | HeadingDown | None deriving (Eq, Show)
 data KeyControl = KeyPause | KeyLeft | KeyUp | KeyRight | KeyDown | KeyOther
 
-initGlobalModel :: IO (Data.IORef.IORef Model)
+initGlobalModel :: IO (IORef Model)
 initGlobalModel = newIORef (Model { debugData = ""
                                   , eaten = 0
                                   , foodItems = []
@@ -154,6 +154,7 @@ moveSnake2 model headingv =
     HeadingUp ->    (fst uhs, snd uhs-1) : snakeGrower growth snake'
     HeadingRight -> (fst uhs+1, snd uhs) : snakeGrower growth snake'
     HeadingDown ->  (fst uhs, snd uhs+1) : snakeGrower growth snake'
+    None ->         snakeGrower growth snake'
   where snake' = snake model
         growth = snakeLength model
         uhs = head snake'
@@ -167,23 +168,34 @@ updateGamefield keyEvent model kk =
       then Pause
       else gameField model
     _ -> gameField model
+  else gameField model
 
+headHitWall model = False
+
+headBitSnake model = any id (map (\c -> (fst c) == cx && (snd c) == cy) (drop 1 (snake model)))
+  where hsm = head (snake model)
+        cx = fst hsm
+        cy = snd hsm
+
+detectCollision model =
+  if headHitWall model || headBitSnake model
+  then Collision
   else gameField model
 
 cook :: Model -> Model
 cook model =
   if foodEaten model
-  then model { gameField = undefined
+  then model { gameField = detectCollision model
              , snakeLength = (snakeLength model) +3
              , foodItems = filter (\c -> not (foodUnderHead c model)) (foodItems model)
              , debugData = "" --show ("** eaten ** ", head (snake model), (foodItems model))
              , eaten = (eaten model) + 1
              }
-  else model { gameField = undefined
+  else model { gameField = detectCollision model
              , snakeLength = shrink (snakeLength model)
              , debugData = "" }
 
-data Msg = Tick | Keypress LastKey | NewFood FoodItems deriving (Show)
+data Msg = Tick | Keypress LastKey deriving (Show)
 
 updateGlobalModel :: Msg -> Model -> Model
 updateGlobalModel (Tick) rawModel = updateTickFields model
