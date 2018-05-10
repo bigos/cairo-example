@@ -120,7 +120,7 @@ headBitSnake model = any id (map (\c -> (fst c) == cx && (snd c) == cy) (drop 1 
         cy = snd hsm
 
 headHitWall :: Model -> Bool
-headHitWall model = False       -- TODO: finish me
+headHitWall model = False -- TODO: finish me
 
 detectCollision :: Model -> GameField
 detectCollision model =
@@ -192,8 +192,7 @@ cook model =
              , snakeLength = (snakeLength model) +3
              , foodItems = filter (\c -> not (foodUnderHead c model)) (foodItems model)
              , debugData = (show ("** eaten ** ", head (snake model), (foodItems model)))
-             , eaten = (eaten model) + 1
-             }
+             , eaten = (eaten model) + 1 }
   else model { gameField = detectCollision model
              , snakeLength = shrink (snakeLength model)
              , debugData = "" }
