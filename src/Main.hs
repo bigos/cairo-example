@@ -31,7 +31,8 @@ import qualified GI.Gtk as Gtk ( DrawingArea
                                , widgetGetAllocatedWidth
                                , widgetQueueDraw
                                , widgetShowAll
-                               , windowNew )
+                               , windowNew
+                               , windowSetDefaultSize)
 import GI.Gtk.Enums (WindowType(..))
 
 import qualified GI.Gdk (getEventKeyKeyval)
@@ -83,7 +84,7 @@ initialModel = Model { debugData = ""
                      , heading = HeadingRight
                      , Main.height = 400
                      , lastKey = 32
-                     , Main.scale = 15
+                     , Main.scale = 25
                      , snake = [(6,7),(5,7)]
                      , tickInterval = 500
                      , time = 1
@@ -268,6 +269,7 @@ main = do
   globalModel <- initGlobalModel
 
   win <- Gtk.windowNew WindowTypeToplevel
+  Gtk.windowSetDefaultSize win 300 200
   canvas <- Gtk.drawingAreaNew
   Gtk.containerAdd win canvas
 
