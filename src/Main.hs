@@ -4,7 +4,7 @@ module Main where
 
 -- imports ----------------------------------------
 
-import Debug.Trace
+-- import Debug.Trace
 import System.Random
 import Data.IORef ( IORef
                   , newIORef
@@ -248,7 +248,7 @@ moveSnake model headingv =
   else moveSnake2 model headingv
 
 moveSnake2 :: Model -> Heading -> Snake
-moveSnake2 model headingv | trace ("move snake2 " ++ (show headingv)) True =
+moveSnake2 model headingv =
   case headingv of
     HeadingLeft ->  (fst uhs-1, snd uhs) : snakeGrower growth snake'
     HeadingUp ->    (fst uhs, snd uhs-1) : snakeGrower growth snake'
