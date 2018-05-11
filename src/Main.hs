@@ -188,6 +188,7 @@ data Msg = Tick | Keypress LastKey deriving (Show)
 maxRandoms :: Int -> Int -> [Int]
 maxRandoms m seedn = randomRs (0, m) (mkStdGen seedn)
 
+randomCoord :: (Int, Int) -> Int -> [Coordinate]
 randomCoord size seed = take 3 $ zip xrand yrand
   where xrand = maxRandoms (fst size) seed
         yrand = maxRandoms (snd size) seed
