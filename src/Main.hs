@@ -204,7 +204,6 @@ cook model =
              , debugData = "" }
 
 updateGlobalModel :: Msg -> Model -> Model
--- updateGlobalModel (Tick) rawModel | trace (show ("\n===> ",rawModel)) True = updateTickFields model
 updateGlobalModel (Tick) rawModel = updateTickFields model
   where model = cook rawModel
         moreFood model' =
