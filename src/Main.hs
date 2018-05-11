@@ -5,8 +5,7 @@ module Main where
 -- imports ----------------------------------------
 
 import Debug.Trace
--- import Data.List
--- import System.Random
+import System.Random
 import Data.IORef ( IORef
                   , newIORef
                   , readIORef
@@ -68,7 +67,7 @@ data Model = Model {
   , scale :: Int
   , snake :: Snake
   , tickInterval :: Float
-  -- , time :: Maybe Time
+  , time :: Int
   , width :: Int
   } deriving (Show)
 
@@ -86,7 +85,8 @@ initialModel = Model { debugData = ""
                      , lastKey = 32
                      , Main.scale = 15
                      , snake = [(6,7),(5,7)]
-                     , tickInterval = 500 -- time
+                     , tickInterval = 500
+                     , time = 1
                      , Main.width = 600 }
 
 -- in the above example Main.height is explained here with following text
@@ -185,6 +185,13 @@ drawCanvas _ model = do
 
 data Msg = Tick | Keypress LastKey deriving (Show)
 
+maxRandoms :: Int -> Int -> [Int]
+maxRandoms m seedn = randomRs (0, m) (mkStdGen seedn)
+
+randomCoord size seed = take 3 $ zip xrand yrand
+  where xrand = maxRandoms (fst size) seed
+        yrand = maxRandoms (snd size) seed
+
 cook :: Model -> Model
 cook model =
   if foodEaten model
@@ -201,8 +208,9 @@ updateGlobalModel :: Msg -> Model -> Model
 -- updateGlobalModel (Tick) rawModel | trace (show ("\n===> ",rawModel)) True = updateTickFields model
 updateGlobalModel (Tick) rawModel = updateTickFields model
   where model = cook rawModel
-        moreFood model' = if ((foodItems model') == []) then [(3,3), (4,4), (5,5)] else foodItems model'
-        updateTickFields m = m { gameField = updateGamefield False model (lastKey model)
+        moreFood model' = if ((foodItems model') == []) then (randomCoord (5,3) (time model)) else foodItems model'
+        updateTickFields m = m { time = succ $ time model
+                               , gameField = updateGamefield False model (lastKey model)
                                , foodItems = moreFood model
                                , snake = moveSnake model (heading model) }
 updateGlobalModel (Keypress kv) oldModel = updateFields oldModel
