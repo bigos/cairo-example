@@ -68,7 +68,7 @@ data Model = Model {
   , scale :: Int
   , snake :: Snake
   , tickInterval :: Float
-  , time :: Int
+  , seed :: Int
   , width :: Int
   } deriving (Show)
 
@@ -87,7 +87,7 @@ initialModel = Model { debugData = ""
                      , Main.scale = 25
                      , snake = [(6,7),(5,7)]
                      , tickInterval = 500
-                     , time = 1
+                     , seed = 1
                      , Main.width = 600 }
 
 -- in the above example Main.height is explained here with following text
@@ -174,7 +174,10 @@ drawCanvas _ model = do
   stroke
 
   -- draw snake
-  setSourceRGB 0 0.5 1
+  case gameField model of
+    Move      -> setSourceRGB 0 0.5 1
+    Collision -> setSourceRGB 1 1 0.5
+    _         -> setSourceRGB 0.4 0.4 0.4
   setLineWidth 5
   moveTo (xc (head (snake model))) (yc (head (snake model)))
   mapM_ (\c -> lineTo (xc c) (yc c)) (snake model)
@@ -187,10 +190,10 @@ drawCanvas _ model = do
 data Msg = Tick | Keypress LastKey deriving (Show)
 
 randomCoord :: (Int, Int) -> Int -> [Coordinate]
-randomCoord size seed = take 3 $ zip xrand yrand
-  where xrand = maxRandoms (fst size) seed
-        yrand = maxRandoms (snd size) seed
-        maxRandoms m seedn = randomRs (0, m) (mkStdGen seedn)
+randomCoord size seedn = take 3 $ zip xrand yrand
+  where xrand = maxRandoms (fst size) seedn
+        yrand = maxRandoms (snd size) seedn
+        maxRandoms m seedx = randomRs (0, m) (mkStdGen seedx)
 
 cook :: Model -> Model
 cook model =
@@ -209,17 +212,17 @@ updateGlobalModel (Tick) rawModel = updateTickFields model
   where model = cook rawModel
         moreFood model' =
           if ((foodItems model') == [])
-          then (randomCoord (10, 5) (time model))
+          then (randomCoord (10, 5) (seed model))
           else foodItems model'
-        updateTickFields m = m { time = succ $ time model
-                               , gameField = updateGamefield False model (lastKey model)
+        updateTickFields m = m { gameField = updateGamefield False model (lastKey model)
                                , foodItems = moreFood model
                                , snake = moveSnake model (heading model) }
 updateGlobalModel (Keypress kv) oldModel = updateFields oldModel
     where newKv      = fromIntegral kv
           newHeading = keyToHeading newKv `ifNoneThen` heading oldModel
           model = cook oldModel
-          updateFields m = m { lastKey = newKv
+          updateFields m = m { seed = succ $ seed model
+                             , lastKey = newKv
                              , heading = newHeading
                              , gameField = updateGamefield True model kv
                              , snake = moveSnake model (heading model) }
@@ -277,7 +280,6 @@ main = do
                                                     Gtk.widgetQueueDraw canvas >> return True)
 
   _ <- Gtk.onWidgetDraw canvas $ \context ->
-    getWidgetSize canvas >>= (\ss->  putStrLn ("drawing event - widget size " ++ (show ss))) >>
     readIORef globalModel >>=
     (\model ->
     (renderWithContext context (drawCanvas canvas model))) >> pure True
