@@ -139,7 +139,7 @@ renderWithContext :: GICairo.Context -> Render () -> IO ()
 renderWithContext ct r = GICairo.withManagedPtr ct $ \p ->
   runReaderT (runRender r) (Cairo (castPtr p))
 
-getWidgetSize :: Gtk.DrawingArea -> IO (Int, Int)
+getWidgetSize :: Gtk.DrawingArea -> Render (Int, Int)
 getWidgetSize widget = do
   width'  <- fromIntegral <$> Gtk.widgetGetAllocatedWidth widget
   height' <- fromIntegral <$> Gtk.widgetGetAllocatedHeight widget
@@ -160,17 +160,22 @@ h    `ifNoneThen` _ = h
 -- view ----------------------------------------
 
 drawCanvas :: Gtk.DrawingArea -> Model -> Render ()
-drawCanvas _ model = do
+drawCanvas canvas model = do
+  size <- getWidgetSize canvas
+  let mwidth  = fromIntegral (fst size) :: Int
+      mheight = fromIntegral (snd size) :: Int
+      s = div (min mwidth mheight) 15
+
   -- drawing changes color when you press 'a' on keyboard
   if (lastKey model) == 97 then setSourceRGB 0.9 0.5 0 else setSourceRGB 0.6 0.9 0
-  setLineWidth 20
+  setLineWidth $ fromIntegral (s * 10)
   setLineCap LineCapRound
   setLineJoin LineJoinRound
 
   -- draw snakes food
   setSourceRGB 0.8 1 0.2
   setLineWidth 10
-  mapM_ (\c -> moveTo (xc c) (yc c) >> lineTo (xc c) (yc c)) (foodItems model)
+  mapM_ (\c -> moveTo (xc s c) (yc s c) >> lineTo (xc s c) (yc s c)) (foodItems model)
   stroke
 
   -- draw snake
@@ -179,11 +184,11 @@ drawCanvas _ model = do
     Collision -> setSourceRGB 1 1 0.5
     _         -> setSourceRGB 0.4 0.4 0.4
   setLineWidth 5
-  moveTo (xc (head (snake model))) (yc (head (snake model)))
-  mapM_ (\c -> lineTo (xc c) (yc c)) (snake model)
+  moveTo (xc s (head (snake model))) (yc s (head (snake model)))
+  mapM_ (\c -> lineTo (xc s c) (yc s c)) (snake model)
   stroke
-  where xc c = fromIntegral $ (Main.scale model) * (fst c)
-        yc c = fromIntegral $ (Main.scale model) * (snd c)
+  where xc s c = fromIntegral $ s * (fst c)
+        yc s c = fromIntegral $ s * (snd c)
 
 -- update ----------------------------------------
 
