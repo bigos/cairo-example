@@ -206,7 +206,7 @@ cook model =
   then model { gameField = detectCollision model
              , snakeLength = (snakeLength model) +3
              , foodItems = filter (\c -> not (foodUnderHead c model)) (foodItems model)
-             , debugData = (show ("** eaten **" :: String, head (snake model), (foodItems model)))
+             , debugData = (debugData model) ++ (show ("** eaten **" :: String, head (snake model), (foodItems model)))
              , eaten = (eaten model) + 1 }
   else model { gameField = detectCollision model
              , snakeLength = shrink (snakeLength model)
@@ -223,9 +223,9 @@ updateGlobalModel (Tick) rawModel = updateTickFields model
                                , foodItems = moreFood model
                                , snake = moveSnake model (heading model) }
 updateGlobalModel (Keypress kv) oldModel = updateFields oldModel
-    where newKv      = fromIntegral kv
-          newHeading = keyToHeading newKv `ifNoneThen` heading oldModel
-          model = cook oldModel
+    where model = cook oldModel
+          newKv      = fromIntegral kv
+          newHeading = keyToHeading newKv `ifNoneThen` heading model
           updateFields m = m { seed = succ $ seed model
                              , lastKey = newKv
                              , heading = newHeading
@@ -270,6 +270,15 @@ moveSnake2 model headingv =
 
 -- main ----------------------------------------
 
+debuggator =
+  let m1 = initialModel
+      m2 = m1 { foodItems = [(7,5)], snake = [(9,5),(10,5),(11,5)], heading = HeadingLeft }
+      m3 = updateGlobalModel Tick m2
+      m4 = updateGlobalModel Tick m3
+      m5 = updateGlobalModel Tick m4
+  in
+    m5
+
 main :: IO ()
 main = do
   _ <- Gtk.init  Nothing
@@ -287,7 +296,10 @@ main = do
   _ <- Gtk.onWidgetDraw canvas $ \context ->
     readIORef globalModel >>=
     (\model ->
-    (renderWithContext context (drawCanvas canvas model))) >> pure True
+       if (gameField model) == Pause
+       then putStr ""
+       else putStrLn ("tick " ++ (show model)) >>
+       (renderWithContext context (drawCanvas canvas model))) >> pure True
 
   _ <- Gtk.onWidgetKeyPressEvent win $ \rkv -> do
     kv <- GI.Gdk.getEventKeyKeyval rkv
@@ -299,7 +311,7 @@ main = do
     Gtk.widgetQueueDraw canvas
     readIORef globalModel >>=
       (\ov ->
-         (putStrLn ( "You have pressed key code"  ++ (show ov))))  >> pure True
+         (putStrLn ( "You have pressed key code " ++ (show kv) ++ " " ++ (show ov))))  >> pure True
 
   _ <- Gtk.onWidgetDestroy win Gtk.mainQuit
 
