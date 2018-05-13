@@ -277,7 +277,7 @@ debuggator =
       m4 = updateGlobalModel Tick m3
       m5 = updateGlobalModel Tick m4
   in
-    m5
+    [m2, m3, m4, m5]
 
 main :: IO ()
 main = do
