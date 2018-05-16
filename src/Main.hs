@@ -9,7 +9,7 @@ import System.Random
 import Data.IORef ( IORef
                   , newIORef
                   , readIORef
-                  , modifyIORef' )
+                  , atomicModifyIORef' )
 import Control.Monad.Trans.Reader (runReaderT)
 import           Foreign.Ptr (castPtr)
 
@@ -270,17 +270,6 @@ moveSnake2 model headingv =
 
 -- main ----------------------------------------
 
-debuggator =
-  let m1 = Model {debugData = "", eaten = 5, foodItems = [(6,2)], gameField = Move, snakeLength = 0, heading = HeadingUp, height = 400, lastKey = 65362, scale = 25, snake = [(6,3),(6,4),(5,4),(4,4),(3,4),(2,4),(1,4),(0,4),(-1,4),(-2,4),(-2,3),(-2,2),(-2,1),(-2,0),(-1,0),(0,0),(1,0),(2,0),(3,0),(4,0)], tickInterval = 500.0, seed = 36, width = 600}
-      m2 = Model {debugData = "", eaten = 5, foodItems = [(6,2)], gameField = Move, snakeLength = 0, heading = HeadingUp, height = 400, lastKey = 65362, scale = 25, snake = [(6,2),(6,3),(6,4),(5,4),(4,4),(3,4),(2,4),(1,4),(0,4),(-1,4),(-2,4),(-2,3),(-2,2),(-2,1),(-2,0),(-1,0),(0,0),(1,0),(2,0),(3,0)], tickInterval = 500.0, seed = 36, width = 600}
-      m3 = Model {debugData = "", eaten = 5, foodItems = [(6,2)], gameField = Move, snakeLength = 0, heading = HeadingRight, height = 400, lastKey = 65363, scale = 25, snake = [(6,1),(6,2),(6,3),(6,4),(5,4),(4,4),(3,4),(2,4),(1,4),(0,4),(-1,4),(-2,4),(-2,3),(-2,2),(-2,1),(-2,0),(-1,0),(0,0),(1,0),(2,0),(3,0)], tickInterval = 500.0, seed = 37, width = 600}
-      ma = updateGlobalModel Tick m1
-      mb = updateGlobalModel Tick ma
-  in
-    [ma,mb]
-
-
-
 main :: IO ()
 main = do
   _ <- Gtk.init  Nothing
@@ -292,7 +281,7 @@ main = do
   canvas <- Gtk.drawingAreaNew
   Gtk.containerAdd win canvas
 
-  _ <- GI.GLib.timeoutAdd GI.GLib.Constants.PRIORITY_DEFAULT 500 ( modifyIORef' globalModel (updateGlobalModel Tick) >>
+  _ <- GI.GLib.timeoutAdd GI.GLib.Constants.PRIORITY_DEFAULT 500 ( atomicModifyIORef' globalModel (updateGlobalModel Tick) >>
                                                     Gtk.widgetQueueDraw canvas >> return True)
 
   _ <- Gtk.onWidgetDraw canvas $ \context ->
@@ -307,7 +296,7 @@ main = do
     kv <- GI.Gdk.getEventKeyKeyval rkv
 
     -- update globalModel in place
-    modifyIORef' globalModel (updateGlobalModel (Keypress (fromIntegral kv)))
+    atomicModifyIORef' globalModel (updateGlobalModel (Keypress (fromIntegral kv)))
 
     -- this forces redrawing of canvas widget
     Gtk.widgetQueueDraw canvas
