@@ -272,11 +272,15 @@ moveSnake2 model headingv =
 
 -- main ----------------------------------------
 
-timerFun g c = do
-  atomicModifyIORef' g $ \p -> do
-    (updateGlobalModel Tick p ,())
-  Gtk.widgetQueueDraw c
+timerFun g c = (atomicModifyIORef' g (\p -> (updateGlobalModel Tick p, ()))) >>
+  Gtk.widgetQueueDraw c >>
   return True
+
+-- timerFun g c = do
+--   atomicModifyIORef' g $ \p -> do
+--     (updateGlobalModel Tick p ,())
+--   Gtk.widgetQueueDraw c
+--   return True
 
 main :: IO ()
 main = do
