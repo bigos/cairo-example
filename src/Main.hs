@@ -9,7 +9,9 @@ import System.Random
 import Data.IORef ( IORef
                   , newIORef
                   , readIORef
-                  , atomicModifyIORef' )
+                  , writeIORef
+                  , atomicModifyIORef'
+                  , modifyIORef' )
 import Control.Monad.Trans.Reader (runReaderT)
 import           Foreign.Ptr (castPtr)
 
@@ -270,6 +272,12 @@ moveSnake2 model headingv =
 
 -- main ----------------------------------------
 
+timerFun g c = do
+  atomicModifyIORef' g $ \p -> do
+    (updateGlobalModel Tick p ,())
+  Gtk.widgetQueueDraw c
+  return True
+
 main :: IO ()
 main = do
   _ <- Gtk.init  Nothing
@@ -281,8 +289,7 @@ main = do
   canvas <- Gtk.drawingAreaNew
   Gtk.containerAdd win canvas
 
-  _ <- GI.GLib.timeoutAdd GI.GLib.Constants.PRIORITY_DEFAULT 500 ( atomicModifyIORef' globalModel (updateGlobalModel Tick) >>
-                                                    Gtk.widgetQueueDraw canvas >> return True)
+  _ <- GI.GLib.timeoutAdd GI.GLib.Constants.PRIORITY_DEFAULT 500 (timerFun globalModel canvas)
 
   _ <- Gtk.onWidgetDraw canvas $ \context ->
     readIORef globalModel >>=
@@ -296,7 +303,8 @@ main = do
     kv <- GI.Gdk.getEventKeyKeyval rkv
 
     -- update globalModel in place
-    atomicModifyIORef' globalModel (updateGlobalModel (Keypress (fromIntegral kv)))
+    _ <- atomicModifyIORef' globalModel $ \i -> do
+      ((updateGlobalModel (Keypress (fromIntegral kv)) i), ())
 
     -- this forces redrawing of canvas widget
     Gtk.widgetQueueDraw canvas
