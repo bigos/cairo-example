@@ -38,6 +38,7 @@ import qualified GI.Gtk as Gtk ( DrawingArea
 import GI.Gtk.Enums (WindowType(..))
 
 import qualified GI.Gdk (getEventKeyKeyval)
+import GI.Gdk.Structs.EventKey
 
 import Graphics.Rendering.Cairo ( lineTo
                                 , moveTo
@@ -276,10 +277,33 @@ moveSnake2 model headingv =
 --   Gtk.widgetQueueDraw c >>
 --   return True
 
+timerFun :: IORef Model -> Gtk.DrawingArea -> IO Bool
 timerFun g c = do
   atomicModifyIORef' g $ \p -> (updateGlobalModel Tick p, ())
   Gtk.widgetQueueDraw c
   return True
+
+drawFun :: IORef Model -> Gtk.DrawingArea -> GICairo.Context -> IO Bool
+drawFun globalModel canvas context = do
+  model <- readIORef globalModel
+  logger model >> renderWithContext context (drawCanvas canvas model)
+  pure True
+  where logger model =
+          if (gameField model) == Pause
+          then putStr ""
+          else putStrLn ("tick " ++ (show model))
+
+keyPressFun :: IORef Model -> GI.Gdk.Structs.EventKey.EventKey -> Gtk.DrawingArea -> IO Bool
+keyPressFun globalModel rkv canvas = do
+    kv <- GI.Gdk.getEventKeyKeyval rkv
+    -- update globalModel in place
+    _ <- atomicModifyIORef' globalModel $ \i -> do
+      ((updateGlobalModel (Keypress (fromIntegral kv)) i), ())
+    -- this forces redrawing of canvas widget
+    Gtk.widgetQueueDraw canvas
+    readIORef globalModel >>=
+      (\ov ->
+         (putStrLn ( "You have pressed key code " ++ (show kv) ++ " " ++ (show ov))))  >> pure True
 
 main :: IO ()
 main = do
@@ -294,26 +318,9 @@ main = do
 
   _ <- GI.GLib.timeoutAdd GI.GLib.Constants.PRIORITY_DEFAULT 500 (timerFun globalModel canvas)
 
-  _ <- Gtk.onWidgetDraw canvas $ \context ->
-    readIORef globalModel >>=
-    (\model ->
-       if (gameField model) == Pause
-       then putStr ""
-       else putStrLn ("tick " ++ (show model)) >>
-       (renderWithContext context (drawCanvas canvas model))) >> pure True
+  _ <- Gtk.onWidgetDraw canvas $ \context -> drawFun globalModel canvas context
 
-  _ <- Gtk.onWidgetKeyPressEvent win $ \rkv -> do
-    kv <- GI.Gdk.getEventKeyKeyval rkv
-
-    -- update globalModel in place
-    _ <- atomicModifyIORef' globalModel $ \i -> do
-      ((updateGlobalModel (Keypress (fromIntegral kv)) i), ())
-
-    -- this forces redrawing of canvas widget
-    Gtk.widgetQueueDraw canvas
-    readIORef globalModel >>=
-      (\ov ->
-         (putStrLn ( "You have pressed key code " ++ (show kv) ++ " " ++ (show ov))))  >> pure True
+  _ <- Gtk.onWidgetKeyPressEvent win $ \rkv -> keyPressFun globalModel rkv canvas
 
   _ <- Gtk.onWidgetDestroy win Gtk.mainQuit
 
