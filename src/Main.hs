@@ -293,8 +293,8 @@ drawFun globalModel canvas context = do
           then putStr ""
           else putStrLn ("tick " ++ (show model))
 
-keyPressFun :: IORef Model -> GI.Gdk.Structs.EventKey.EventKey -> Gtk.DrawingArea -> IO Bool
-keyPressFun globalModel rkv canvas = do
+keyPressFun :: IORef Model -> Gtk.DrawingArea -> GI.Gdk.Structs.EventKey.EventKey -> IO Bool
+keyPressFun globalModel canvas rkv = do
     kv <- GI.Gdk.getEventKeyKeyval rkv
     -- update globalModel in place
     _ <- atomicModifyIORef' globalModel $ \i -> do
@@ -320,7 +320,7 @@ main = do
 
   _ <- Gtk.onWidgetDraw canvas $ \context -> drawFun globalModel canvas context
 
-  _ <- Gtk.onWidgetKeyPressEvent win $ \rkv -> keyPressFun globalModel rkv canvas
+  _ <- Gtk.onWidgetKeyPressEvent win $ \rkv -> keyPressFun globalModel canvas rkv
 
   _ <- Gtk.onWidgetDestroy win Gtk.mainQuit
 
