@@ -299,11 +299,11 @@ keyPressFun globalModel rkv canvas = do
     -- update globalModel in place
     _ <- atomicModifyIORef' globalModel $ \i -> do
       ((updateGlobalModel (Keypress (fromIntegral kv)) i), ())
-    -- this forces redrawing of canvas widget
+    -- force redrawing of canvas widget
     Gtk.widgetQueueDraw canvas
-    readIORef globalModel >>=
-      (\ov ->
-         (putStrLn ( "You have pressed key code " ++ (show kv) ++ " " ++ (show ov))))  >> pure True
+    ov <- readIORef globalModel
+    putStrLn ("You have pressed key code " ++ (show kv) ++ " " ++ (show ov))
+    pure True
 
 main :: IO ()
 main = do
