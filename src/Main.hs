@@ -4,7 +4,7 @@ module Main where
 
 -- imports ----------------------------------------
 
--- import Debug.Trace
+import Debug.Trace
 import System.Random
 import Data.IORef ( IORef
                   , newIORef
@@ -60,7 +60,7 @@ type Snake = [Coordinate]
 type LastKey = Integer
 data GameField = Move | Feeding | Collision | Pause deriving (Show, Eq)
 data Model = Model {
-  debugData :: String
+  debugData :: [String]
   , eaten :: Int
   , foodItems :: FoodItems
   , gameField :: GameField
@@ -79,7 +79,7 @@ data Heading = HeadingLeft | HeadingUp | HeadingRight | HeadingDown | None deriv
 data KeyControl = KeyPause | KeyLeft | KeyUp | KeyRight | KeyDown | KeyOther
 
 initialModel :: Model
-initialModel = Model { debugData = ""
+initialModel = Model { debugData = []
                      , eaten = 0
                      , foodItems = []
                      , gameField = Move
@@ -110,8 +110,10 @@ foodUnderHead c model =
         cx = fst hsm
         cy = snd hsm
 
+        -- snake head at this stage is different from cook model
+        -- second element of the snake is being eaten
 foodEaten :: Model -> Bool
-foodEaten model =
+foodEaten model | trace ("tracing head -> "++(show (head (snake model), (foodItems model)))) True =
   any id (map (\c -> (fst c)==cx && (snd c)==cy) (foodItems model))
   where hsm = head (snake model)
         cx = fst hsm
@@ -209,11 +211,11 @@ cook model =
   then model { gameField = detectCollision model
              , snakeLength = (snakeLength model) +3
              , foodItems = filter (\c -> not (foodUnderHead c model)) (foodItems model)
-             , debugData = (debugData model) ++ (show ("** eaten **" :: String, head (snake model), (foodItems model)))
+             , debugData = [""]
              , eaten = (eaten model) + 1 }
   else model { gameField = detectCollision model
              , snakeLength = shrink (snakeLength model)
-             , debugData = "" }
+             , debugData = (debugData model) ++ [ "."] }
 
 updateGlobalModel :: Msg -> Model -> Model
 updateGlobalModel (Tick) rawModel = updateTickFields model
