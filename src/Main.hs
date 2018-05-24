@@ -178,8 +178,8 @@ drawCanvas canvas model = do
   setLineJoin LineJoinRound
 
   -- draw snakes food
-  setSourceRGB 0.8 1 0.2
-  setLineWidth 10
+  setSourceRGB 0.4 0.6 0.1
+  setLineWidth 13
   mapM_ (\c -> moveTo (xc s c) (yc s c) >> lineTo (xc s c) (yc s c)) (foodItems model)
   stroke
 
@@ -203,7 +203,7 @@ randomCoord :: (Int, Int) -> Int -> [Coordinate]
 randomCoord size seedn = take 3 $ zip xrand yrand
   where xrand = maxRandoms (fst size) seedn
         yrand = maxRandoms (snd size) seedn
-        maxRandoms m seedx = randomRs (0, m) (mkStdGen seedx)
+        maxRandoms m seedx = randomRs (0+2, m+2) (mkStdGen seedx)
 
 cook :: Model -> Model
 cook model =
@@ -302,7 +302,7 @@ keyPressFun globalModel canvas rkv = do
     _ <- atomicModifyIORef' globalModel $ \i -> do
       ((updateGlobalModel (Keypress (fromIntegral kv)) i), ())
     -- force redrawing of canvas widget
-    Gtk.widgetQueueDraw canvas
+    -- Gtk.widgetQueueDraw canvas
     ov <- readIORef globalModel
     putStrLn ("You have pressed key code " ++ (show kv) ++ " " ++ (show ov))
     pure True
@@ -318,7 +318,7 @@ main = do
   canvas <- Gtk.drawingAreaNew
   Gtk.containerAdd win canvas
 
-  _ <- GI.GLib.timeoutAdd GI.GLib.Constants.PRIORITY_DEFAULT 500 (timerFun globalModel canvas)
+  _ <- GI.GLib.timeoutAdd GI.GLib.Constants.PRIORITY_DEFAULT 250 (timerFun globalModel canvas)
 
   _ <- Gtk.onWidgetDraw canvas $ \context -> drawFun globalModel canvas context
 
