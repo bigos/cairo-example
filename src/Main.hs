@@ -110,10 +110,13 @@ foodUnderHead c model =
         cx = fst hsm
         cy = snd hsm
 
+tracelog model prompt = ("tracing " ++ prompt ++ (show mdata))
+  where mdata = (head (snake model), (foodItems model))
+
         -- snake head at this stage is different from cook model
         -- second element of the snake is being eaten
 foodEaten :: Model -> Bool
-foodEaten model | trace ("tracing head -> "++(show (head (snake model), (foodItems model)))) True =
+foodEaten model | trace (tracelog model "foodEaten ") True =
   any id (map (\c -> (fst c)==cx && (snd c)==cy) (foodItems model))
   where hsm = head (snake model)
         cx = fst hsm
